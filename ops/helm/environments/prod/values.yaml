@@ -1,0 +1,43 @@
+# Prod environment values
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/your-org/sie-causal-processor
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8081
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: cp.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+env:
+  DEFINITION_MANAGER_URL: http://sie-definition-manager:8080
+  OIDC_ISSUER_URI: https://login.microsoftonline.com/<prod-tenant-id>/v2.0
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.monitoring.svc.cluster.local:4317
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "2000m"
+    memory: "2Gi"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

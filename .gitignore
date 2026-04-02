@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Java / Maven
+target/
+.mvn/
+.idea/
+.classpath
+.project
+
+# Dev environment overrides
+.env.dev
+
+# Dev environment setup generated files
+.dev-port-forwards.pids

@@ -1,0 +1,4 @@
+{
+    "spring-boot.ls.problem.application-yaml.unknown-property": "IGNORE",
+    "spring-boot.ls.problem.application-yaml.YAML_SHOULD_ESCAPE": "IGNORE"
+}

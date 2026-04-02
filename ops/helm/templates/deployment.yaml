@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sie-causal-processor.fullname" . }}
+  labels:
+    app: {{ include "sie-causal-processor.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "sie-causal-processor.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "sie-causal-processor.fullname" . }}
+    spec:
+      containers:
+        - name: cp
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8081
+          env:
+            - name: SERVER_PORT
+              value: "8081"
+            - name: DEFINITION_MANAGER_URL
+              value: {{ .Values.env.DEFINITION_MANAGER_URL | quote }}
+            - name: OIDC_ISSUER_URI
+              value: {{ .Values.env.OIDC_ISSUER_URI | quote }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

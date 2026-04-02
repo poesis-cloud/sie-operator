@@ -1,0 +1,6 @@
+apiVersion: v2
+name: sie-causal-processor
+description: Helm chart for SIE Causal Processor
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
