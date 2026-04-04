@@ -1,11 +1,11 @@
-{{- define "sie-causal-processor.name" -}}
+{{- define "sie-operator.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "sie-causal-processor.fullname" -}}
+{{- define "sie-operator.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- include "sie-causal-processor.name" . -}}
+{{- include "sie-operator.name" . -}}
 {{- end -}}
 {{- end -}}

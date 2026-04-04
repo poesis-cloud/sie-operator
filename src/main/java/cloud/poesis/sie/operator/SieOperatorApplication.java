@@ -1,12 +1,12 @@
-package cloud.poesis.sie.caupro;
+package cloud.poesis.sie.operator;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class SieCausalProcessorApplication {
+public class SieOperatorApplication {
 
   public static void main(String[] args) {
-    SpringApplication.run(SieCausalProcessorApplication.class, args);
+    SpringApplication.run(SieOperatorApplication.class, args);
   }
 }

@@ -1,0 +1,12 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: sie-operator
+
+op:
+  definition-manager:
+    url: http://localhost:8080
+  security:
+    oauth2-login-enabled: false

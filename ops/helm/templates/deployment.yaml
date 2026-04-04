@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "sie-causal-processor.fullname" . }}
+  name: {{ include "sie-operator.fullname" . }}
   labels:
-    app: {{ include "sie-causal-processor.fullname" . }}
+    app: {{ include "sie-operator.fullname" . }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "sie-causal-processor.fullname" . }}
+      app: {{ include "sie-operator.fullname" . }}
   template:
     metadata:
       labels:
-        app: {{ include "sie-causal-processor.fullname" . }}
+        app: {{ include "sie-operator.fullname" . }}
     spec:
       containers:
         - name: cp

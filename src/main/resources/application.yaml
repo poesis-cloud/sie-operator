@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: sie-causal-processor
+    name: sie-operator
   security:
     oauth2:
       resourceserver:
@@ -19,6 +19,12 @@ management:
     sampling:
       probability: ${OTEL_SAMPLING_PROBABILITY:1.0}
 
+op:
+  definition-manager:
+    url: ${DEFINITION_MANAGER_URL:http://localhost:8080}
+  security:
+    oauth2-login-enabled: ${OP_OAUTH2_LOGIN_ENABLED:false}
+
 otel:
   exporter:
     otlp:
@@ -29,9 +35,3 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
-
-cp:
-  definition-manager:
-    url: ${DEFINITION_MANAGER_URL:http://localhost:8080}
-  security:
-    oauth2-login-enabled: ${CP_OAUTH2_LOGIN_ENABLED:false}

@@ -1,10 +1,10 @@
-package cloud.poesis.sie.caupro;
+package cloud.poesis.sie.operator;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class SieCausalProcessorApplicationTest {
+class SieOperatorApplicationTest {
 
   @Test
   void contextLoads() {}

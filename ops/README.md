@@ -1,6 +1,6 @@
-# SIE Causal Processor deployables
+# SIE Operator deployables
 
-This folder contains ops/runtime assets for the Causal Processor service.
+This folder contains ops/runtime assets for the Operator service.
 
 - `ops/helm/`: Helm chart for Kubernetes deployments (dev/stage/prod depending cluster/context)
 
@@ -13,8 +13,8 @@ Chart path:
 Install with defaults:
 
 ```bash
-helm upgrade --install sie-causal-processor \
-  sie/sie-causal-processor/ops/helm \
+helm upgrade --install sie-operator \
+  sie/sie-operator/ops/helm \
   -n sie --create-namespace
 ```
 

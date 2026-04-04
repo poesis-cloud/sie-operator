@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "sie-causal-processor.fullname" . }}
+  name: {{ include "sie-operator.fullname" . }}
 spec:
   type: {{ .Values.service.type }}
   selector:
-    app: {{ include "sie-causal-processor.fullname" . }}
+    app: {{ include "sie-operator.fullname" . }}
   ports:
     - name: http
       port: {{ .Values.service.port }}

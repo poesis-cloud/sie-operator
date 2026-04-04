@@ -1,0 +1,9 @@
+{
+  "$schema": "gsm://archetypes/Archetype/v1",
+  "$id": "itip://frameworks/http/HTTPRequest/interaction/v1",
+  "$ref": "gsm://archetypes/InteractionArchetype/v1",
+  "title": "HTTPRequest",
+  "description": "HTTP interaction archetype \u2014 request direction. Extends InteractionArchetype. Types a one-way causal link (Effector \u2192 Receptor) carrying an HTTP request message from client to server. Source: RFC 9110 \u00a76 \u2014 Message Abstraction, \u00a73.4 \u2014 Messages.",
+  "type": "object",
+  "unevaluatedProperties": false
+}

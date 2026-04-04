@@ -1,10 +1,10 @@
-# SIE Causal Processor
+# SIE Operator
 
 Stateless Starlark Mechanism execution service for the Systemic Intelligence Engine (SIE).
 
 ## Purpose
 
-The Causal Processor executes **Mechanisms** defined in GSM by interpreting their Starlark rule bodies. It fetches
+The Operator executes **Mechanisms** defined in GSM by interpreting their Starlark rule bodies. It fetches
 Mechanism definitions (including Effectors, Receptors, and Interactions) from the Definition Manager, interprets the
 Starlark code in a sandboxed environment, and dispatches the resulting effects to their targets via protocol-specific
 calls (HTTP, Kafka, etc.) determined by the protocol archetype metadata on the wiring.
@@ -26,7 +26,7 @@ mvn clean verify
 
 ```bash
 make dev-up    # start dependencies (Definition Manager must be reachable)
-make run-api   # start the causal processor
+make run-api   # start the operator
 ```
 
 ## Deploy

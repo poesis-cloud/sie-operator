@@ -1,0 +1,9 @@
+{
+  "$schema": "gsm://archetypes/Archetype/v1",
+  "$id": "itip://frameworks/http/HTTPPostRequest/effector/v1",
+  "$ref": "itip://archetypes/CreateEffector/v1",
+  "title": "HTTPPostRequest",
+  "description": "HTTP effector archetype \u2014 POST request. Extends CreateEffector. This port requests that the target resource process the representation enclosed in the request according to the resource's own specific semantics. Primary use: creation of a new resource subordinate to the target. Source: RFC 9110 \u00a79.3.3 \u2014 POST.",
+  "type": "object",
+  "unevaluatedProperties": false
+}

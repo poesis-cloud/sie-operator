@@ -1,0 +1,9 @@
+{
+  "$schema": "gsm://archetypes/Archetype/v1",
+  "$id": "itip://frameworks/http/HTTPDeleteRequest/effector/v1",
+  "$ref": "itip://archetypes/DeleteEffector/v1",
+  "title": "HTTPDeleteRequest",
+  "description": "HTTP effector archetype \u2014 DELETE request. Extends DeleteEffector. This port requests that the origin server remove the association between the target resource and its current functionality. Source: RFC 9110 \u00a79.3.5 \u2014 DELETE.",
+  "type": "object",
+  "unevaluatedProperties": false
+}
