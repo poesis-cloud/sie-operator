@@ -25,9 +25,9 @@ class OperationExecutionServiceTest {
   void executesSimpleFireAndForgetRule() throws Exception {
     String rule =
         """
-                event = sys.receive("PaymentFailed")
-                sys.effect("OrderUpdate", {"orderId": event["orderId"], "status": "failed"})
-                """;
+        event = sys.receive("PaymentFailed")
+        sys.effect("OrderUpdate", {"orderId": event["orderId"], "status": "failed"})
+        """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
@@ -49,11 +49,11 @@ class OperationExecutionServiceTest {
   void executesClosedLoopRule() throws Exception {
     String rule =
         """
-                event = sys.receive("OrderCreated")
-                result = sys.effect("ValidatePayment", {"orderId": event["orderId"]}).receive("ValidationResult")
-                if result["approved"]:
-                    sys.effect("OrderApproved", {"orderId": event["orderId"]})
-                """;
+        event = sys.receive("OrderCreated")
+        result = sys.effect("ValidatePayment", {"orderId": event["orderId"]}).receive("ValidationResult")
+        if result["approved"]:
+            sys.effect("OrderApproved", {"orderId": event["orderId"]})
+        """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
@@ -70,10 +70,10 @@ class OperationExecutionServiceTest {
   void hostFunctionNowIsAvailable() throws Exception {
     String rule =
         """
-                event = sys.receive("Trigger")
-                ts = now()
-                sys.effect("Timestamped", {"ts": ts})
-                """;
+        event = sys.receive("Trigger")
+        ts = now()
+        sys.effect("Timestamped", {"ts": ts})
+        """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
@@ -89,10 +89,10 @@ class OperationExecutionServiceTest {
   void hostFunctionUuid7IsAvailable() throws Exception {
     String rule =
         """
-                event = sys.receive("Trigger")
-                id = uuid7()
-                sys.effect("WithId", {"id": id})
-                """;
+        event = sys.receive("Trigger")
+        id = uuid7()
+        sys.effect("WithId", {"id": id})
+        """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
@@ -108,10 +108,10 @@ class OperationExecutionServiceTest {
   void hostFunctionFullmatchIsAvailable() throws Exception {
     String rule =
         """
-                event = sys.receive("Trigger")
-                matched = fullmatch("[a-z]+", event["value"])
-                sys.effect("Result", {"matched": matched})
-                """;
+        event = sys.receive("Trigger")
+        matched = fullmatch("[a-z]+", event["value"])
+        sys.effect("Result", {"matched": matched})
+        """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
@@ -126,10 +126,10 @@ class OperationExecutionServiceTest {
   void hostFunctionSearchIsAvailable() throws Exception {
     String rule =
         """
-                event = sys.receive("Trigger")
-                ver = search("v([0-9.]+)", event["tag"])
-                sys.effect("Result", {"version": ver})
-                """;
+        event = sys.receive("Trigger")
+        ver = search("v([0-9.]+)", event["tag"])
+        sys.effect("Result", {"version": ver})
+        """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
@@ -157,9 +157,9 @@ class OperationExecutionServiceTest {
   void runtimeErrorReturnsFailure() throws Exception {
     String rule =
         """
-                event = sys.receive("T")
-                x = 1 / 0
-                """;
+        event = sys.receive("T")
+        x = 1 / 0
+        """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
@@ -174,11 +174,11 @@ class OperationExecutionServiceTest {
   void maxStepsEnforced() throws Exception {
     String rule =
         """
-                event = sys.receive("T")
-                x = 0
-                for i in range(1000000):
-                    x = x + 1
-                """;
+        event = sys.receive("T")
+        x = 0
+        for i in range(1000000):
+            x = x + 1
+        """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox, 100);
@@ -192,14 +192,14 @@ class OperationExecutionServiceTest {
   void effectWithFullChain() throws Exception {
     String rule =
         """
-                event = sys.receive("Trigger")
-                result = (sys.effect("FraudCheck", {"orderId": event["oid"]})
-                    .by("FraudGateway")
-                    .receive("FraudResult")
-                    .on("FraudReceiver"))
-                if result["approved"]:
-                    sys.effect("Cleared", {"oid": event["oid"]})
-                """;
+        event = sys.receive("Trigger")
+        result = (sys.effect("FraudCheck", {"orderId": event["oid"]})
+            .by("FraudGateway")
+            .receive("FraudResult")
+            .on("FraudReceiver"))
+        if result["approved"]:
+            sys.effect("Cleared", {"oid": event["oid"]})
+        """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
@@ -218,10 +218,10 @@ class OperationExecutionServiceTest {
   void containsRuntimeExceptionFromHandler() throws Exception {
     String rule =
         """
-                event = sys.receive("Trigger")
-                result = sys.effect("Bad", {"x": 1}).receive("Response")
-                val = result["key"]
-                """;
+        event = sys.receive("Trigger")
+        result = sys.effect("Bad", {"x": 1}).receive("Response")
+        val = result["key"]
+        """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
