@@ -36,8 +36,8 @@ public class OperationController {
       summary = "Execute a mechanism operation",
       description =
           "Resolves the mechanism topology from the Definition Manager, validates the trigger "
-              + "payload against receptor archetype schemas, executes the Starlark rule, validates "
-              + "effect payloads against effector archetype schemas, and returns the produced effects.")
+              + "input against receptor archetype schemas, executes the Starlark rule, validates "
+              + "effect outputs against effector archetype schemas, and returns the produced effects.")
   @ApiResponse(
       responseCode = "200",
       description = "Operation executed (check 'success' field for outcome)",

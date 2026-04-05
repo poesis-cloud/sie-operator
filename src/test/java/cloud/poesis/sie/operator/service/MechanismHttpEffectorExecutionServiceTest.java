@@ -13,16 +13,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 
-class HttpEffectDispatchServiceTest {
+class MechanismHttpEffectorExecutionServiceTest {
 
   private MockWebServer server;
-  private HttpEffectDispatchService dispatcher;
+  private MechanismHttpEffectorExecutionService dispatcher;
 
   @BeforeEach
   void setUp() throws IOException {
     server = new MockWebServer();
     server.start();
-    dispatcher = new HttpEffectDispatchService(WebClient.builder());
+    dispatcher = new MechanismHttpEffectorExecutionService(WebClient.builder());
   }
 
   @AfterEach

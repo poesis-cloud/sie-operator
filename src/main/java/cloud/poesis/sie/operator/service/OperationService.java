@@ -1,9 +1,11 @@
 package cloud.poesis.sie.operator.service;
 
+import cloud.poesis.sie.operator.dto.ArchetypeAscriptionDto;
 import cloud.poesis.sie.operator.dto.EffectDto;
 import cloud.poesis.sie.operator.dto.OperationRequestDto;
 import cloud.poesis.sie.operator.dto.OperationResponseDto;
 import cloud.poesis.sie.operator.dto.OperationTopologyDto;
+import cloud.poesis.sie.operator.dto.ReceptorAscriptionDto;
 import cloud.poesis.sie.operator.exception.OperationTopologyResolutionException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
@@ -19,17 +21,17 @@ public class OperationService {
   private static final Logger log = LoggerFactory.getLogger(OperationService.class);
 
   private final OperationTopologyResolutionService topologyResolver;
-  private final PayloadValidatorService payloadValidator;
+  private final OperationInputValidationService inputValidator;
   private final OperationExecutionService sandbox;
-  private final List<EffectDispatchService> dispatchers;
+  private final List<MechanismEffectorExecutionService> dispatchers;
 
   public OperationService(
       OperationTopologyResolutionService topologyResolver,
-      PayloadValidatorService payloadValidator,
+      OperationInputValidationService inputValidator,
       OperationExecutionService sandbox,
-      List<EffectDispatchService> dispatchers) {
+      List<MechanismEffectorExecutionService> dispatchers) {
     this.topologyResolver = topologyResolver;
-    this.payloadValidator = payloadValidator;
+    this.inputValidator = inputValidator;
     this.sandbox = sandbox;
     this.dispatchers = List.copyOf(dispatchers);
   }
@@ -43,7 +45,7 @@ public class OperationService {
     }
 
     String ruleSource = topology.getRuleSource();
-    String mechanismId = topology.mechanismAscriptionId().toString();
+    String mechanismId = topology.mechanism().id().toString();
 
     log.debug(
         "Executing mechanism {} with {} receptors, {} effectors",
@@ -51,12 +53,12 @@ public class OperationService {
         topology.receptors().size(),
         topology.effectors().size());
 
-    // Validate trigger payload against receptor schemas
-    PayloadValidatorService.ValidationResult triggerValidation =
-        validateTriggerPayload(request.triggerPayload(), topology);
+    // Validate trigger input against receptor schemas
+    OperationInputValidationService.ValidationResult triggerValidation =
+        validateOperationInput(request.operationInput(), topology);
     if (!triggerValidation.isValid()) {
       return OperationResponseDto.failure(
-          "Trigger payload validation failed against '"
+          "Trigger input validation failed against '"
               + triggerValidation.archetypeName()
               + "': "
               + triggerValidation.errors());
@@ -66,7 +68,7 @@ public class OperationService {
         sandbox.execute(
             mechanismId,
             ruleSource,
-            request.triggerPayload(),
+            request.operationInput(),
             effect -> dispatchAndValidateReception(effect, topology));
 
     if (!result.success()) {
@@ -78,28 +80,29 @@ public class OperationService {
     return OperationResponseDto.success(result.effects());
   }
 
-  private PayloadValidatorService.ValidationResult validateTriggerPayload(
-      Map<String, Object> triggerPayload, OperationTopologyDto topology) {
+  private OperationInputValidationService.ValidationResult validateOperationInput(
+      Map<String, Object> operationInput, OperationTopologyDto topology) {
     if (topology.receptors().isEmpty()) {
       log.debug("No receptors in topology — skipping trigger validation");
-      return PayloadValidatorService.ValidationResult.valid();
+      return OperationInputValidationService.ValidationResult.valid();
     }
 
-    for (OperationTopologyDto.ResolvedPort receptor : topology.receptors()) {
-      Optional<JsonNode> schema = topology.findSchema(receptor.archetypeName());
-      if (schema.isPresent()) {
-        PayloadValidatorService.ValidationResult result =
-            payloadValidator.validate(receptor.archetypeName(), triggerPayload, schema.get());
+    for (ReceptorAscriptionDto receptor : topology.receptors()) {
+      Optional<ArchetypeAscriptionDto> archetype = topology.findArchetype(receptor.archetype());
+      if (archetype.isPresent()) {
+        OperationInputValidationService.ValidationResult result =
+            inputValidator.validate(
+                archetype.get().title(), operationInput, archetype.get().schema());
         if (!result.isValid()) {
           return result;
         }
       }
     }
-    return PayloadValidatorService.ValidationResult.valid();
+    return OperationInputValidationService.ValidationResult.valid();
   }
 
   private Object dispatchAndValidateReception(EffectDto effect, OperationTopologyDto topology) {
-    for (EffectDispatchService dispatcher : dispatchers) {
+    for (MechanismEffectorExecutionService dispatcher : dispatchers) {
       if (dispatcher.supports(effect)) {
         log.debug(
             "Dispatching effect archetype={} via {}",
@@ -120,8 +123,8 @@ public class OperationService {
       String feedbackArchetype, Map<String, Object> reception, OperationTopologyDto topology) {
     Optional<JsonNode> schema = topology.findSchema(feedbackArchetype);
     if (schema.isPresent()) {
-      PayloadValidatorService.ValidationResult result =
-          payloadValidator.validate(feedbackArchetype, reception, schema.get());
+      OperationInputValidationService.ValidationResult result =
+          inputValidator.validate(feedbackArchetype, reception, schema.get());
       if (!result.isValid()) {
         throw new IllegalStateException(
             "Closed-loop response validation failed against '"

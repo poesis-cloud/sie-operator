@@ -132,7 +132,7 @@ class ItipGovernanceAppraisalIT {
             List.of());
 
     Map<String, Object> body =
-        Map.of("mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "triggerPayload", trigger);
+        Map.of("mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "operationInput", trigger);
 
     var response = restTemplate.postForEntity("/api/v1/operations", body, JsonNode.class);
 
@@ -195,7 +195,7 @@ class ItipGovernanceAppraisalIT {
                     "true")));
 
     Map<String, Object> body =
-        Map.of("mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "triggerPayload", trigger);
+        Map.of("mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "operationInput", trigger);
 
     var response = restTemplate.postForEntity("/api/v1/operations", body, JsonNode.class);
 
@@ -210,16 +210,16 @@ class ItipGovernanceAppraisalIT {
     assertThat(effects).isEmpty();
   }
 
-  // ---------- Validation case: invalid trigger payload → validation failure
+  // ---------- Validation case: invalid trigger input → validation failure
   // ----------
 
   @Test
   void invalidTrigger_missingRequiredFields_returnsValidationError() {
-    Map<String, Object> invalidPayload = Map.of("unknownField", "value");
+    Map<String, Object> invalidInput = Map.of("unknownField", "value");
 
     Map<String, Object> body =
         Map.of(
-            "mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "triggerPayload", invalidPayload);
+            "mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "operationInput", invalidInput);
 
     var response = restTemplate.postForEntity("/api/v1/operations", body, JsonNode.class);
 

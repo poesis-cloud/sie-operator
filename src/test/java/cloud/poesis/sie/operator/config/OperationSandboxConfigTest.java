@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-class StarlarkSandboxConfigTest {
+class OperationSandboxConfigTest {
 
-  private final StarlarkSandboxConfig.HostFunctions functions =
-      new StarlarkSandboxConfig.HostFunctions();
+  private final OperationSandboxConfig.HostFunctions functions =
+      new OperationSandboxConfig.HostFunctions();
 
   @Test
   void nowReturnsIso8601ByDefault() throws Exception {

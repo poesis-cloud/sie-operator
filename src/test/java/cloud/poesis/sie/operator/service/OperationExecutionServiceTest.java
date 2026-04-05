@@ -2,6 +2,7 @@ package cloud.poesis.sie.operator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cloud.poesis.sie.operator.config.OperationSandboxConfig;
 import cloud.poesis.sie.operator.dto.EffectDto;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +29,8 @@ class OperationExecutionServiceTest {
                 sys.effect("OrderUpdate", {"orderId": event["orderId"], "status": "failed"})
                 """;
 
-    OperationExecutionService sandbox = new OperationExecutionService();
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute(
             "mech-001",
@@ -53,7 +55,8 @@ class OperationExecutionServiceTest {
                     sys.effect("OrderApproved", {"orderId": event["orderId"]})
                 """;
 
-    OperationExecutionService sandbox = new OperationExecutionService();
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute("mech-002", rule, Map.of("orderId", "ORD-456"), this::handleEffect);
 
@@ -72,7 +75,8 @@ class OperationExecutionServiceTest {
                 sys.effect("Timestamped", {"ts": ts})
                 """;
 
-    OperationExecutionService sandbox = new OperationExecutionService();
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute("mech-003", rule, Map.of(), this::handleEffect);
 
@@ -90,7 +94,8 @@ class OperationExecutionServiceTest {
                 sys.effect("WithId", {"id": id})
                 """;
 
-    OperationExecutionService sandbox = new OperationExecutionService();
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute("mech-004", rule, Map.of(), this::handleEffect);
 
@@ -108,7 +113,8 @@ class OperationExecutionServiceTest {
                 sys.effect("Result", {"matched": matched})
                 """;
 
-    OperationExecutionService sandbox = new OperationExecutionService();
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute("mech-005", rule, Map.of("value", "abc"), this::handleEffect);
 
@@ -125,7 +131,8 @@ class OperationExecutionServiceTest {
                 sys.effect("Result", {"version": ver})
                 """;
 
-    OperationExecutionService sandbox = new OperationExecutionService();
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute("mech-006", rule, Map.of("tag", "app-v2.3.1"), this::handleEffect);
 
@@ -137,7 +144,8 @@ class OperationExecutionServiceTest {
   void syntaxErrorReturnsFailure() throws Exception {
     String rule = "event = sys.receive(\"T\")\nif True\n  pass";
 
-    OperationExecutionService sandbox = new OperationExecutionService();
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute("mech-err", rule, Map.of(), this::handleEffect);
 
@@ -153,7 +161,8 @@ class OperationExecutionServiceTest {
                 x = 1 / 0
                 """;
 
-    OperationExecutionService sandbox = new OperationExecutionService();
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute("mech-err2", rule, Map.of(), this::handleEffect);
 
@@ -171,7 +180,8 @@ class OperationExecutionServiceTest {
                     x = x + 1
                 """;
 
-    OperationExecutionService sandbox = new OperationExecutionService(100);
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox, 100);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute("mech-budget", rule, Map.of(), this::handleEffect);
 
@@ -191,7 +201,8 @@ class OperationExecutionServiceTest {
                     sys.effect("Cleared", {"oid": event["oid"]})
                 """;
 
-    OperationExecutionService sandbox = new OperationExecutionService();
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute("mech-007", rule, Map.of("oid", "O-1"), this::handleEffect);
 
@@ -212,7 +223,8 @@ class OperationExecutionServiceTest {
                 val = result["key"]
                 """;
 
-    OperationExecutionService sandbox = new OperationExecutionService();
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute(
             "mech-err3",

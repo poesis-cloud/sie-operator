@@ -10,13 +10,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Component
 @Order(0)
-public class HttpEffectDispatchService implements EffectDispatchService {
+public class MechanismHttpEffectorExecutionService implements MechanismEffectorExecutionService {
 
-  private static final Logger log = LoggerFactory.getLogger(HttpEffectDispatchService.class);
+  private static final Logger log =
+      LoggerFactory.getLogger(MechanismHttpEffectorExecutionService.class);
 
   private final WebClient webClient;
 
-  public HttpEffectDispatchService(WebClient.Builder webClientBuilder) {
+  public MechanismHttpEffectorExecutionService(WebClient.Builder webClientBuilder) {
     this.webClient = webClientBuilder.build();
   }
 

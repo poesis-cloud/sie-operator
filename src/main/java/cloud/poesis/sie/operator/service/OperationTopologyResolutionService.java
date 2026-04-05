@@ -9,7 +9,6 @@ import cloud.poesis.sie.operator.dto.OperationTopologyDto;
 import cloud.poesis.sie.operator.dto.ReceptorAscriptionDto;
 import cloud.poesis.sie.operator.exception.OperationTopologyResolutionException;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,27 +54,23 @@ public class OperationTopologyResolutionService {
 
     validateOperability(mechanismAscriptionId, effectorAscriptions);
 
-    Map<String, ArchetypeAscriptionDto> archetypes = new HashMap<>();
-
-    List<OperationTopologyDto.ResolvedPort> receptors = new ArrayList<>(receptorAscriptions.size());
+    Map<UUID, ArchetypeAscriptionDto> archetypes = new HashMap<>();
     for (ReceptorAscriptionDto r : receptorAscriptions) {
-      receptors.add(resolvePort(r.id(), r.archetype(), archetypes));
+      resolveArchetype(r.archetype(), archetypes);
     }
-
-    List<OperationTopologyDto.ResolvedPort> effectors = new ArrayList<>(effectorAscriptions.size());
     for (EffectorAscriptionDto e : effectorAscriptions) {
-      effectors.add(resolvePort(e.id(), e.archetype(), archetypes));
+      resolveArchetype(e.archetype(), archetypes);
     }
 
     log.info(
         "Topology resolved for mechanism ascription {}: {} receptors, {} effectors, {} archetypes",
         mechanismAscriptionId,
-        receptors.size(),
-        effectors.size(),
+        receptorAscriptions.size(),
+        effectorAscriptions.size(),
         archetypes.size());
 
     return new OperationTopologyDto(
-        mechanismAscriptionId, mechanism, receptors, effectors, archetypes);
+        mechanism, receptorAscriptions, effectorAscriptions, archetypes);
   }
 
   /**
@@ -129,16 +124,12 @@ public class OperationTopologyResolutionService {
     return receptors.getFirst().id();
   }
 
-  private OperationTopologyDto.ResolvedPort resolvePort(
-      UUID portAscriptionId,
-      UUID archetypeAscriptionId,
-      Map<String, ArchetypeAscriptionDto> archetypes) {
-    ArchetypeAscriptionDto archetype = client.getArchetypeAscription(archetypeAscriptionId);
-
-    archetypes.put(archetype.title(), archetype);
-
-    return new OperationTopologyDto.ResolvedPort(
-        portAscriptionId, archetypeAscriptionId, archetype.title(), archetype.schema());
+  private void resolveArchetype(
+      UUID archetypeAscriptionId, Map<UUID, ArchetypeAscriptionDto> archetypes) {
+    if (!archetypes.containsKey(archetypeAscriptionId)) {
+      ArchetypeAscriptionDto archetype = client.getArchetypeAscription(archetypeAscriptionId);
+      archetypes.put(archetypeAscriptionId, archetype);
+    }
   }
 
   private void validateExecutableStatus(String status, String label, UUID identifier) {

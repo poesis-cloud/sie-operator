@@ -106,10 +106,18 @@ class OperationTopologyResolutionServiceTest {
     OperationTopologyDto topology = resolver.resolve(mechAscId);
 
     assertThat(topology.receptors()).hasSize(1);
-    assertThat(topology.receptors().getFirst().archetypeName()).isEqualTo("AppraisalTrigger");
+    assertThat(topology.findArchetype(topology.receptors().getFirst().archetype()))
+        .isPresent()
+        .get()
+        .extracting(ArchetypeAscriptionDto::title)
+        .isEqualTo("AppraisalTrigger");
     assertThat(topology.effectors()).hasSize(1);
-    assertThat(topology.effectors().getFirst().archetypeName()).isEqualTo("AppraisalFinding");
-    assertThat(topology.archetypes()).containsKeys("AppraisalTrigger", "AppraisalFinding");
+    assertThat(topology.findArchetype(topology.effectors().getFirst().archetype()))
+        .isPresent()
+        .get()
+        .extracting(ArchetypeAscriptionDto::title)
+        .isEqualTo("AppraisalFinding");
+    assertThat(topology.archetypes()).containsKeys(triggerArchAscId, findingArchAscId);
   }
 
   @Test
@@ -160,7 +168,7 @@ class OperationTopologyResolutionServiceTest {
 
     OperationTopologyDto topology = resolver.resolve(mechAscId);
 
-    assertThat(topology.mechanismAscriptionId()).isEqualTo(mechAscId);
+    assertThat(topology.mechanism().id()).isEqualTo(mechAscId);
   }
 
   @Test
@@ -196,22 +204,20 @@ class OperationTopologyResolutionServiceTest {
     ArchetypeAscriptionDto findingArchetype =
         new ArchetypeAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, "AppraisalFinding", schema);
 
-    OperationTopologyDto.ResolvedPort receptor =
-        new OperationTopologyDto.ResolvedPort(
-            UUID.randomUUID(), triggerArchetype.id(), "AppraisalTrigger", schema);
-    OperationTopologyDto.ResolvedPort effector =
-        new OperationTopologyDto.ResolvedPort(
-            UUID.randomUUID(), findingArchetype.id(), "AppraisalFinding", schema);
+    ReceptorAscriptionDto receptor =
+        new ReceptorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechAscId, triggerArchetype.id());
+    EffectorAscriptionDto effector =
+        new EffectorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechAscId, findingArchetype.id());
 
     MechanismAscriptionDto mechanism = mechanismAscription(mechAscId, "rule");
 
     OperationTopologyDto topology =
         new OperationTopologyDto(
-            mechAscId,
             mechanism,
             List.of(receptor),
             List.of(effector),
-            Map.of("AppraisalTrigger", triggerArchetype, "AppraisalFinding", findingArchetype));
+            Map.of(
+                triggerArchetype.id(), triggerArchetype, findingArchetype.id(), findingArchetype));
 
     assertThat(topology.findReceptorByArchetypeName("AppraisalTrigger")).isPresent();
     assertThat(topology.findReceptorByArchetypeName("NonExistent")).isEmpty();

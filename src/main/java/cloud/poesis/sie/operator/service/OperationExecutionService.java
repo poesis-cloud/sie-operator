@@ -1,13 +1,11 @@
 package cloud.poesis.sie.operator.service;
 
-import cloud.poesis.sie.operator.config.MechanismRuleApiConfig;
-import cloud.poesis.sie.operator.config.MechanismRuleCausalFluentApiConfig.SysModule;
 import cloud.poesis.sie.operator.dto.EffectDto;
-import com.google.common.collect.ImmutableMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import net.starlark.java.eval.EvalException;
 import net.starlark.java.eval.Module;
 import net.starlark.java.eval.Mutability;
@@ -17,38 +15,30 @@ import net.starlark.java.eval.StarlarkThread;
 import net.starlark.java.syntax.FileOptions;
 import net.starlark.java.syntax.ParserInput;
 import net.starlark.java.syntax.SyntaxError;
-import org.springframework.stereotype.Component;
 
-@Component
 public class OperationExecutionService {
 
   private static final long DEFAULT_MAX_STEPS = 100_000L;
 
   private final long maxSteps;
-  private final MechanismRuleApiConfig hostFunctions;
+  private final SandboxFactory sandboxFactory;
 
-  public OperationExecutionService() {
-    this(DEFAULT_MAX_STEPS);
+  public OperationExecutionService(SandboxFactory sandboxFactory) {
+    this(sandboxFactory, DEFAULT_MAX_STEPS);
   }
 
-  public OperationExecutionService(long maxSteps) {
+  OperationExecutionService(SandboxFactory sandboxFactory, long maxSteps) {
+    this.sandboxFactory = sandboxFactory;
     this.maxSteps = maxSteps;
-    this.hostFunctions = new MechanismRuleApiConfig();
   }
 
   public ExecutionResult execute(
       String mechanismId,
       String ruleSource,
-      Map<String, Object> triggerPayload,
+      Map<String, Object> operationInput,
       Function<EffectDto, Object> effectHandler) {
 
-    SysModule sys = new SysModule(mechanismId, triggerPayload, effectHandler);
-
-    ImmutableMap.Builder<String, Object> predeclared = ImmutableMap.builder();
-    predeclared.put("sys", sys);
-    Starlark.addMethods(predeclared, hostFunctions);
-
-    Module module = Module.withPredeclared(StarlarkSemantics.DEFAULT, predeclared.build());
+    RuleSandbox sandbox = sandboxFactory.create(mechanismId, operationInput, effectHandler);
 
     try (Mutability mu = Mutability.create("rule")) {
       StarlarkThread thread = new StarlarkThread(mu, StarlarkSemantics.DEFAULT);
@@ -56,13 +46,10 @@ public class OperationExecutionService {
 
       String wrapped = wrapInFunction(ruleSource);
       ParserInput input = ParserInput.fromString(wrapped, "<rule>");
-      FileOptions options = FileOptions.DEFAULT;
 
-      Starlark.execFile(input, options, module, thread);
+      Starlark.execFile(input, FileOptions.DEFAULT, sandbox.module(), thread);
 
-      sys.flushPendingEffects();
-
-      List<EffectDto> effects = sys.getEmittedEffects();
+      List<EffectDto> effects = sandbox.complete().get();
       return new ExecutionResult(true, effects, null);
 
     } catch (SyntaxError.Exception e) {
@@ -96,4 +83,14 @@ public class OperationExecutionService {
       effects = effects != null ? List.copyOf(effects) : List.of();
     }
   }
+
+  @FunctionalInterface
+  public interface SandboxFactory {
+    RuleSandbox create(
+        String mechanismId,
+        Map<String, Object> operationInput,
+        Function<EffectDto, Object> effectHandler);
+  }
+
+  public record RuleSandbox(Module module, Supplier<List<EffectDto>> complete) {}
 }

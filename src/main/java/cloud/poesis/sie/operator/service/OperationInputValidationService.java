@@ -14,59 +14,59 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Validates payloads against archetype JSON schemas resolved from the mechanism topology. Used to
- * validate trigger payloads (receptor data) and effect payloads (effector data).
+ * Validates inputs against archetype JSON schemas resolved from the mechanism topology. Used to
+ * validate trigger inputs (receptor data) and effect outputs (effector data).
  */
 @Service
-public class PayloadValidatorService {
+public class OperationInputValidationService {
 
-  private static final Logger log = LoggerFactory.getLogger(PayloadValidatorService.class);
+  private static final Logger log = LoggerFactory.getLogger(OperationInputValidationService.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final JsonSchemaFactory schemaFactory;
 
-  public PayloadValidatorService() {
+  public OperationInputValidationService() {
     this.schemaFactory =
         JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7))
             .build();
   }
 
   /**
-   * Validates a data payload against an archetype JSON Schema from the topology.
+   * Validates data against an archetype JSON Schema from the topology.
    *
    * @param archetypeName the archetype name (for error messages)
-   * @param payload the data to validate
+   * @param data the data to validate
    * @param archetypeSchema the archetype statement (JSON Schema) from defman
    * @return validation result
    */
   public ValidationResult validate(
-      String archetypeName, Map<String, Object> payload, JsonNode archetypeSchema) {
-    JsonNode payloadNode = MAPPER.valueToTree(payload);
-    return validate(archetypeName, payloadNode, archetypeSchema);
+      String archetypeName, Map<String, Object> data, JsonNode archetypeSchema) {
+    JsonNode inputNode = MAPPER.valueToTree(data);
+    return validate(archetypeName, inputNode, archetypeSchema);
   }
 
   /**
-   * Validates a data payload (as JsonNode) against an archetype JSON Schema.
+   * Validates data (as JsonNode) against an archetype JSON Schema.
    *
    * @param archetypeName the archetype name (for error messages)
-   * @param payloadNode the data to validate
+   * @param inputNode the data to validate
    * @param archetypeSchema the archetype statement (JSON Schema) from defman
    * @return validation result
    */
   public ValidationResult validate(
-      String archetypeName, JsonNode payloadNode, JsonNode archetypeSchema) {
+      String archetypeName, JsonNode inputNode, JsonNode archetypeSchema) {
     JsonSchema schema = schemaFactory.getSchema(archetypeSchema);
-    Set<ValidationMessage> errors = schema.validate(payloadNode);
+    Set<ValidationMessage> errors = schema.validate(inputNode);
 
     if (errors.isEmpty()) {
-      log.debug("Payload valid against archetype '{}'", archetypeName);
+      log.debug("Input valid against archetype '{}'", archetypeName);
       return ValidationResult.valid();
     }
 
     String errorMessages =
         errors.stream().map(ValidationMessage::getMessage).collect(Collectors.joining("; "));
 
-    log.warn("Payload validation failed against archetype '{}': {}", archetypeName, errorMessages);
+    log.warn("Input validation failed against archetype '{}': {}", archetypeName, errorMessages);
     return ValidationResult.invalid(archetypeName, errorMessages);
   }
 

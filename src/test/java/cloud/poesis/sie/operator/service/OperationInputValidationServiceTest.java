@@ -8,19 +8,19 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class PayloadValidatorServiceTest {
+class OperationInputValidationServiceTest {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private PayloadValidatorService validator;
+  private OperationInputValidationService validator;
 
   @BeforeEach
   void setUp() {
-    validator = new PayloadValidatorService();
+    validator = new OperationInputValidationService();
   }
 
   @Test
-  void validPayloadPasses() {
+  void validInputPasses() {
     ObjectNode schema = MAPPER.createObjectNode();
     schema.put("type", "object");
     schema.set("required", MAPPER.createArrayNode().add("ruleType").add("subjectType"));
@@ -29,10 +29,10 @@ class PayloadValidatorServiceTest {
     props.set("subjectType", MAPPER.createObjectNode().put("type", "string"));
     schema.set("properties", props);
 
-    Map<String, Object> payload = Map.of("ruleType", "test-rule", "subjectType", "DIRECTIVE");
+    Map<String, Object> input = Map.of("ruleType", "test-rule", "subjectType", "DIRECTIVE");
 
-    PayloadValidatorService.ValidationResult result =
-        validator.validate("TestArchetype", payload, schema);
+    OperationInputValidationService.ValidationResult result =
+        validator.validate("TestArchetype", input, schema);
 
     assertThat(result.isValid()).isTrue();
     assertThat(result.errors()).isNull();
@@ -48,10 +48,10 @@ class PayloadValidatorServiceTest {
     props.set("subjectType", MAPPER.createObjectNode().put("type", "string"));
     schema.set("properties", props);
 
-    Map<String, Object> payload = Map.of("ruleType", "test-rule");
+    Map<String, Object> input = Map.of("ruleType", "test-rule");
 
-    PayloadValidatorService.ValidationResult result =
-        validator.validate("TestArchetype", payload, schema);
+    OperationInputValidationService.ValidationResult result =
+        validator.validate("TestArchetype", input, schema);
 
     assertThat(result.isValid()).isFalse();
     assertThat(result.archetypeName()).isEqualTo("TestArchetype");
@@ -66,38 +66,38 @@ class PayloadValidatorServiceTest {
     props.set("count", MAPPER.createObjectNode().put("type", "integer"));
     schema.set("properties", props);
 
-    Map<String, Object> payload = Map.of("count", "not-a-number");
+    Map<String, Object> input = Map.of("count", "not-a-number");
 
-    PayloadValidatorService.ValidationResult result =
-        validator.validate("TestArchetype", payload, schema);
+    OperationInputValidationService.ValidationResult result =
+        validator.validate("TestArchetype", input, schema);
 
     assertThat(result.isValid()).isFalse();
     assertThat(result.errors()).isNotEmpty();
   }
 
   @Test
-  void validPayloadWithJsonNodePasses() {
+  void validInputWithJsonNodePasses() {
     ObjectNode schema = MAPPER.createObjectNode();
     schema.put("type", "object");
 
-    ObjectNode payloadNode = MAPPER.createObjectNode();
-    payloadNode.put("key", "value");
+    ObjectNode inputNode = MAPPER.createObjectNode();
+    inputNode.put("key", "value");
 
-    PayloadValidatorService.ValidationResult result =
-        validator.validate("TestArchetype", payloadNode, schema);
+    OperationInputValidationService.ValidationResult result =
+        validator.validate("TestArchetype", inputNode, schema);
 
     assertThat(result.isValid()).isTrue();
   }
 
   @Test
-  void emptyPayloadPassesSchemaWithNoRequiredFields() {
+  void emptyInputPassesSchemaWithNoRequiredFields() {
     ObjectNode schema = MAPPER.createObjectNode();
     schema.put("type", "object");
 
-    Map<String, Object> payload = Map.of();
+    Map<String, Object> input = Map.of();
 
-    PayloadValidatorService.ValidationResult result =
-        validator.validate("TestArchetype", payload, schema);
+    OperationInputValidationService.ValidationResult result =
+        validator.validate("TestArchetype", input, schema);
 
     assertThat(result.isValid()).isTrue();
   }

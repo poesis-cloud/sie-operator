@@ -39,7 +39,7 @@ class OperationControllerTest {
     Map<String, Object> body =
         Map.of(
             "mechanismAscriptionId", mechanismId.toString(),
-            "triggerPayload", Map.of("orderId", "ORD-1"));
+            "operationInput", Map.of("orderId", "ORD-1"));
 
     mockMvc
         .perform(
@@ -60,7 +60,7 @@ class OperationControllerTest {
     Map<String, Object> body =
         Map.of(
             "mechanismAscriptionId", mechanismId.toString(),
-            "triggerPayload", Map.of());
+            "operationInput", Map.of());
 
     mockMvc
         .perform(
@@ -73,14 +73,14 @@ class OperationControllerTest {
   }
 
   @Test
-  void acceptsEmptyTriggerPayload() throws Exception {
+  void acceptsEmptyOperationInput() throws Exception {
     when(operationService.operate(any())).thenReturn(OperationResponseDto.success(List.of()));
 
     UUID mechanismId = UUID.randomUUID();
     Map<String, Object> body =
         Map.of(
             "mechanismAscriptionId", mechanismId.toString(),
-            "triggerPayload", Map.of());
+            "operationInput", Map.of());
 
     mockMvc
         .perform(
@@ -101,7 +101,7 @@ class OperationControllerTest {
     Map<String, Object> body =
         Map.of(
             "mechanismAscriptionId", mechanismId.toString(),
-            "triggerPayload", Map.of());
+            "operationInput", Map.of());
 
     mockMvc
         .perform(

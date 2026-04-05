@@ -3,12 +3,15 @@ package cloud.poesis.sie.operator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import cloud.poesis.sie.operator.config.OperationSandboxConfig;
 import cloud.poesis.sie.operator.dto.ArchetypeAscriptionDto;
 import cloud.poesis.sie.operator.dto.EffectDto;
+import cloud.poesis.sie.operator.dto.EffectorAscriptionDto;
 import cloud.poesis.sie.operator.dto.MechanismAscriptionDto;
 import cloud.poesis.sie.operator.dto.OperationRequestDto;
 import cloud.poesis.sie.operator.dto.OperationResponseDto;
 import cloud.poesis.sie.operator.dto.OperationTopologyDto;
+import cloud.poesis.sie.operator.dto.ReceptorAscriptionDto;
 import cloud.poesis.sie.operator.exception.OperationTopologyResolutionException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,17 +33,28 @@ class OperationServiceTest {
 
   @Mock private OperationTopologyResolutionService topologyResolver;
 
-  private PayloadValidatorService payloadValidator;
+  private OperationInputValidationService inputValidator;
   private OperationExecutionService sandbox;
   private OperationService operationService;
 
   @BeforeEach
   void setUp() {
-    payloadValidator = new PayloadValidatorService();
-    sandbox = new OperationExecutionService();
-    List<EffectDispatchService> dispatchers = List.of(new LoggingEffectDispatchService());
-    operationService =
-        new OperationService(topologyResolver, payloadValidator, sandbox, dispatchers);
+    inputValidator = new OperationInputValidationService();
+    sandbox = new OperationExecutionService(OperationSandboxConfig::createSandbox);
+    List<MechanismEffectorExecutionService> dispatchers =
+        List.of(
+            new MechanismEffectorExecutionService() {
+              @Override
+              public boolean supports(EffectDto effect) {
+                return true;
+              }
+
+              @Override
+              public Map<String, Object> dispatch(EffectDto effect) {
+                return null;
+              }
+            });
+    operationService = new OperationService(topologyResolver, inputValidator, sandbox, dispatchers);
   }
 
   @Test
@@ -94,24 +108,21 @@ class OperationServiceTest {
     ArchetypeAscriptionDto findingArchetype =
         new ArchetypeAscriptionDto(findingArchId, "ACTIVE", 1, "AppraisalFinding", findingSchema);
 
-    OperationTopologyDto.ResolvedPort receptor =
-        new OperationTopologyDto.ResolvedPort(
-            UUID.randomUUID(), triggerArchId, "AppraisalTrigger", triggerSchema);
-    OperationTopologyDto.ResolvedPort effector =
-        new OperationTopologyDto.ResolvedPort(
-            UUID.randomUUID(), findingArchId, "AppraisalFinding", findingSchema);
+    ReceptorAscriptionDto receptor =
+        new ReceptorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechanismAscId, triggerArchId);
+    EffectorAscriptionDto effector =
+        new EffectorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechanismAscId, findingArchId);
 
     OperationTopologyDto topology =
         new OperationTopologyDto(
-            mechanismAscId,
             mechanismAscription(mechanismAscId, ruleSource),
             List.of(receptor),
             List.of(effector),
-            Map.of("AppraisalTrigger", triggerArchetype, "AppraisalFinding", findingArchetype));
+            Map.of(triggerArchId, triggerArchetype, findingArchId, findingArchetype));
     when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
 
     UUID subjectDefId = UUID.randomUUID();
-    Map<String, Object> triggerPayload =
+    Map<String, Object> operationInput =
         Map.of(
             "ruleType", "gsm:rules/appraisal/directive/norm/operationalization",
             "subjectType", "DIRECTIVE",
@@ -119,7 +130,7 @@ class OperationServiceTest {
             "subject", Map.of("modal", "MUST", "verb", "protect", "purpose", "sec"),
             "relatedAscriptions", List.of());
 
-    OperationRequestDto request = new OperationRequestDto(mechanismAscId, triggerPayload);
+    OperationRequestDto request = new OperationRequestDto(mechanismAscId, operationInput);
 
     OperationResponseDto response = operationService.operate(request);
 
@@ -130,7 +141,7 @@ class OperationServiceTest {
   }
 
   @Test
-  void rejectsTriggerPayloadFailingSchemaValidation() {
+  void rejectsOperationInputFailingSchemaValidation() {
     UUID mechanismAscId = UUID.randomUUID();
     String ruleSource = "event = sys.receive(\"AppraisalTrigger\")";
 
@@ -140,23 +151,21 @@ class OperationServiceTest {
     ArchetypeAscriptionDto triggerArchetype =
         new ArchetypeAscriptionDto(triggerArchId, "ACTIVE", 1, "AppraisalTrigger", triggerSchema);
 
-    OperationTopologyDto.ResolvedPort receptor =
-        new OperationTopologyDto.ResolvedPort(
-            UUID.randomUUID(), triggerArchId, "AppraisalTrigger", triggerSchema);
+    ReceptorAscriptionDto receptor =
+        new ReceptorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechanismAscId, triggerArchId);
 
     OperationTopologyDto topology =
         new OperationTopologyDto(
-            mechanismAscId,
             mechanismAscription(mechanismAscId, ruleSource),
             List.of(receptor),
             List.of(),
-            Map.of("AppraisalTrigger", triggerArchetype));
+            Map.of(triggerArchId, triggerArchetype));
     when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
 
     // Missing required fields — should fail validation
-    Map<String, Object> badPayload = Map.of("unknownField", "value");
+    Map<String, Object> badInput = Map.of("unknownField", "value");
 
-    OperationRequestDto request = new OperationRequestDto(mechanismAscId, badPayload);
+    OperationRequestDto request = new OperationRequestDto(mechanismAscId, badInput);
 
     OperationResponseDto response = operationService.operate(request);
 
@@ -250,16 +259,15 @@ class OperationServiceTest {
 
     OperationTopologyDto topology =
         new OperationTopologyDto(
-            mechanismAscId,
             mechanismAscription(mechanismAscId, ruleSource),
             List.of(),
             List.of(),
-            Map.of("Response", responseArchetype));
+            Map.of(responseArchetype.id(), responseArchetype));
     when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
 
     // Dispatcher returns a map missing the required "value" field
-    EffectDispatchService invalidResponseDispatcher =
-        new EffectDispatchService() {
+    MechanismEffectorExecutionService invalidResponseDispatcher =
+        new MechanismEffectorExecutionService() {
           @Override
           public boolean supports(EffectDto effect) {
             return true;
@@ -272,7 +280,7 @@ class OperationServiceTest {
         };
     OperationService service =
         new OperationService(
-            topologyResolver, payloadValidator, sandbox, List.of(invalidResponseDispatcher));
+            topologyResolver, inputValidator, sandbox, List.of(invalidResponseDispatcher));
 
     OperationRequestDto request = new OperationRequestDto(mechanismAscId, Map.of());
 
@@ -286,11 +294,7 @@ class OperationServiceTest {
 
   private OperationTopologyDto topologyWithNoSchemas(UUID ascId, String ruleSource) {
     return new OperationTopologyDto(
-        ascId,
-        mechanismAscription(ascId, ruleSource),
-        List.of(),
-        List.of(),
-        Collections.emptyMap());
+        mechanismAscription(ascId, ruleSource), List.of(), List.of(), Collections.emptyMap());
   }
 
   private MechanismAscriptionDto mechanismAscription(UUID ascId, String ruleSource) {

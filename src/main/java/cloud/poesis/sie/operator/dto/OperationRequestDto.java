@@ -18,11 +18,11 @@ public record OperationRequestDto(
     @NotNull
         @Schema(
             description =
-                "The trigger payload — validated against the mechanism's trigger receptor archetype schema")
-        Map<String, Object> triggerPayload) {
+                "The operation input — validated against the mechanism's trigger receptor archetype schema")
+        Map<String, Object> operationInput) {
 
   public OperationRequestDto {
-    triggerPayload =
-        triggerPayload != null ? Collections.unmodifiableMap(triggerPayload) : Map.of();
+    operationInput =
+        operationInput != null ? Collections.unmodifiableMap(operationInput) : Map.of();
   }
 }
