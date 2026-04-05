@@ -1,12 +1,10 @@
 package cloud.poesis.sie.operator.service;
 
-import cloud.poesis.sie.operator.dispatch.EffectDispatcher;
+import cloud.poesis.sie.operator.dto.EffectDto;
 import cloud.poesis.sie.operator.dto.OperationRequestDto;
 import cloud.poesis.sie.operator.dto.OperationResponseDto;
 import cloud.poesis.sie.operator.dto.OperationTopologyDto;
-import cloud.poesis.sie.operator.exception.TopologyResolutionException;
-import cloud.poesis.sie.operator.starlark.EffectRecord;
-import cloud.poesis.sie.operator.starlark.StarlarkSandbox;
+import cloud.poesis.sie.operator.exception.OperationTopologyResolutionException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
@@ -20,16 +18,16 @@ public class OperationService {
 
   private static final Logger log = LoggerFactory.getLogger(OperationService.class);
 
-  private final TopologyResolverService topologyResolver;
+  private final OperationTopologyResolutionService topologyResolver;
   private final PayloadValidatorService payloadValidator;
-  private final StarlarkSandbox sandbox;
-  private final List<EffectDispatcher> dispatchers;
+  private final OperationExecutionService sandbox;
+  private final List<EffectDispatchService> dispatchers;
 
   public OperationService(
-      TopologyResolverService topologyResolver,
+      OperationTopologyResolutionService topologyResolver,
       PayloadValidatorService payloadValidator,
-      StarlarkSandbox sandbox,
-      List<EffectDispatcher> dispatchers) {
+      OperationExecutionService sandbox,
+      List<EffectDispatchService> dispatchers) {
     this.topologyResolver = topologyResolver;
     this.payloadValidator = payloadValidator;
     this.sandbox = sandbox;
@@ -40,7 +38,7 @@ public class OperationService {
     OperationTopologyDto topology;
     try {
       topology = topologyResolver.resolve(request.mechanismAscriptionId());
-    } catch (TopologyResolutionException e) {
+    } catch (OperationTopologyResolutionException e) {
       return OperationResponseDto.failure(e.getMessage());
     }
 
@@ -64,7 +62,7 @@ public class OperationService {
               + triggerValidation.errors());
     }
 
-    StarlarkSandbox.ExecutionResult result =
+    OperationExecutionService.ExecutionResult result =
         sandbox.execute(
             mechanismId,
             ruleSource,
@@ -100,8 +98,8 @@ public class OperationService {
     return PayloadValidatorService.ValidationResult.valid();
   }
 
-  private Object dispatchAndValidateReception(EffectRecord effect, OperationTopologyDto topology) {
-    for (EffectDispatcher dispatcher : dispatchers) {
+  private Object dispatchAndValidateReception(EffectDto effect, OperationTopologyDto topology) {
+    for (EffectDispatchService dispatcher : dispatchers) {
       if (dispatcher.supports(effect)) {
         log.debug(
             "Dispatching effect archetype={} via {}",

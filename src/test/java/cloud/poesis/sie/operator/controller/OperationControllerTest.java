@@ -6,9 +6,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import cloud.poesis.sie.operator.dto.EffectDto;
 import cloud.poesis.sie.operator.dto.OperationResponseDto;
+import cloud.poesis.sie.operator.exception.OperationTopologyResolutionException;
 import cloud.poesis.sie.operator.service.OperationService;
-import cloud.poesis.sie.operator.starlark.EffectRecord;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +32,7 @@ class OperationControllerTest {
 
   @Test
   void executesMechanismAndReturnEffects() throws Exception {
-    EffectRecord effect =
-        EffectRecord.fireAndForget("OrderConfirmation", Map.of("orderId", "ORD-1"));
+    EffectDto effect = EffectDto.fireAndForget("OrderConfirmation", Map.of("orderId", "ORD-1"));
     when(operationService.operate(any())).thenReturn(OperationResponseDto.success(List.of(effect)));
 
     UUID mechanismId = UUID.randomUUID();
@@ -90,5 +90,26 @@ class OperationControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.effects").isEmpty());
+  }
+
+  @Test
+  void returns422ForTopologyResolutionException() throws Exception {
+    when(operationService.operate(any()))
+        .thenThrow(new OperationTopologyResolutionException("Mechanism ascription not found: abc"));
+
+    UUID mechanismId = UUID.randomUUID();
+    Map<String, Object> body =
+        Map.of(
+            "mechanismAscriptionId", mechanismId.toString(),
+            "triggerPayload", Map.of());
+
+    mockMvc
+        .perform(
+            post("/api/v1/operations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body)))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.title").value("Operation topology resolution failed"))
+        .andExpect(jsonPath("$.detail").value("Mechanism ascription not found: abc"));
   }
 }

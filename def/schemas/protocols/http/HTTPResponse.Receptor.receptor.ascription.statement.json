@@ -1,9 +1,0 @@
-{
-  "$schema": "gsm://archetypes/Archetype/v1",
-  "$id": "itip://frameworks/http/HTTPResponse/receptor/v1",
-  "$ref": "gsm://archetypes/ReceptorArchetype/v1",
-  "title": "HTTPResponse",
-  "description": "HTTP receptor archetype \u2014 response direction (client-side handler). Extends ReceptorArchetype. Identifies the client port that receives HTTP responses. Client response handlers have no protocol-native address; the archetype title serves as the directional marker. Source: RFC 9110 \u00a715 \u2014 Status Codes.",
-  "type": "object",
-  "unevaluatedProperties": false
-}

@@ -1,9 +1,0 @@
-{
-  "$schema": "gsm://archetypes/Archetype/v1",
-  "$id": "itip://frameworks/http/HTTPGetRequest/effector/v1",
-  "$ref": "itip://archetypes/ReadEffector/v1",
-  "title": "HTTPGetRequest",
-  "description": "HTTP effector archetype \u2014 GET request. Extends ReadEffector. This port retrieves a representation of the target resource. Source: RFC 9110 \u00a79.3.1 \u2014 GET.",
-  "type": "object",
-  "unevaluatedProperties": false
-}

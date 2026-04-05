@@ -6,6 +6,8 @@ spring:
     name: sie-operator
 
 op:
+  bootstrap:
+    enabled: false
   definition-manager:
     url: http://localhost:8080
   security:

@@ -1,9 +1,0 @@
-{
-  "$schema": "gsm://archetypes/Archetype/v1",
-  "$id": "itip://frameworks/http/HTTPHeadRequest/effector/v1",
-  "$ref": "itip://archetypes/ReadEffector/v1",
-  "title": "HTTPHeadRequest",
-  "description": "HTTP effector archetype \u2014 HEAD request. Extends ReadEffector. Same as GET but transfers only the status line and header section without the response body. Source: RFC 9110 \u00a79.3.2 \u2014 HEAD.",
-  "type": "object",
-  "unevaluatedProperties": false
-}

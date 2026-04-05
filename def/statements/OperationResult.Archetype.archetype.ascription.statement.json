@@ -1,0 +1,26 @@
+{
+  "$schema": "gsm://archetypes/Archetype/v1",
+  "$id": "sie-operator://archetypes/OperationResult/v1",
+  "title": "OperationResult",
+  "description": "SIE Operator effector archetype — operation result contract. Defines the shape of an operation outcome emitted by the operator's run-operation mechanism.",
+  "type": "object",
+  "required": [ "success" ],
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the operation completed successfully."
+    },
+    "effects": {
+      "type": "array",
+      "description": "Effects produced by the mechanism rule execution.",
+      "items": {
+        "type": "object"
+      }
+    },
+    "error": {
+      "type": [ "string", "null" ],
+      "description": "Error message when the operation failed."
+    }
+  },
+  "unevaluatedProperties": false
+}

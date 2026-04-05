@@ -2,6 +2,7 @@ package cloud.poesis.sie.operator.controller;
 
 import cloud.poesis.sie.operator.dto.OperationRequestDto;
 import cloud.poesis.sie.operator.dto.OperationResponseDto;
+import cloud.poesis.sie.operator.exception.OperationTopologyResolutionException;
 import cloud.poesis.sie.operator.service.OperationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -9,8 +10,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,5 +49,13 @@ public class OperationController {
       @Valid @RequestBody OperationRequestDto request) {
     OperationResponseDto response = operationService.operate(request);
     return ResponseEntity.ok(response);
+  }
+
+  @ExceptionHandler(OperationTopologyResolutionException.class)
+  public ProblemDetail handleTopologyResolutionException(OperationTopologyResolutionException ex) {
+    ProblemDetail problem =
+        ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+    problem.setTitle("Operation topology resolution failed");
+    return problem;
   }
 }

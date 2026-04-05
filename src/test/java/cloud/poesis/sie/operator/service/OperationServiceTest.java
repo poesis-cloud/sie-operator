@@ -3,16 +3,13 @@ package cloud.poesis.sie.operator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cloud.poesis.sie.operator.dispatch.EffectDispatcher;
-import cloud.poesis.sie.operator.dispatch.LoggingEffectDispatcher;
 import cloud.poesis.sie.operator.dto.ArchetypeAscriptionDto;
+import cloud.poesis.sie.operator.dto.EffectDto;
 import cloud.poesis.sie.operator.dto.MechanismAscriptionDto;
 import cloud.poesis.sie.operator.dto.OperationRequestDto;
 import cloud.poesis.sie.operator.dto.OperationResponseDto;
 import cloud.poesis.sie.operator.dto.OperationTopologyDto;
-import cloud.poesis.sie.operator.exception.TopologyResolutionException;
-import cloud.poesis.sie.operator.starlark.EffectRecord;
-import cloud.poesis.sie.operator.starlark.StarlarkSandbox;
+import cloud.poesis.sie.operator.exception.OperationTopologyResolutionException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -31,17 +28,17 @@ class OperationServiceTest {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  @Mock private TopologyResolverService topologyResolver;
+  @Mock private OperationTopologyResolutionService topologyResolver;
 
   private PayloadValidatorService payloadValidator;
-  private StarlarkSandbox sandbox;
+  private OperationExecutionService sandbox;
   private OperationService operationService;
 
   @BeforeEach
   void setUp() {
     payloadValidator = new PayloadValidatorService();
-    sandbox = new StarlarkSandbox();
-    List<EffectDispatcher> dispatchers = List.of(new LoggingEffectDispatcher());
+    sandbox = new OperationExecutionService();
+    List<EffectDispatchService> dispatchers = List.of(new LoggingEffectDispatchService());
     operationService =
         new OperationService(topologyResolver, payloadValidator, sandbox, dispatchers);
   }
@@ -210,7 +207,8 @@ class OperationServiceTest {
     UUID mechanismAscId = UUID.randomUUID();
     when(topologyResolver.resolve(mechanismAscId))
         .thenThrow(
-            new TopologyResolutionException("Mechanism ascription not found: " + mechanismAscId));
+            new OperationTopologyResolutionException(
+                "Mechanism ascription not found: " + mechanismAscId));
 
     OperationRequestDto request = new OperationRequestDto(mechanismAscId, Map.of());
 
@@ -224,7 +222,8 @@ class OperationServiceTest {
   void returnsFailureWhenMechanismHasNoRuleSource() {
     UUID mechanismAscId = UUID.randomUUID();
     when(topologyResolver.resolve(mechanismAscId))
-        .thenThrow(new TopologyResolutionException("Mechanism ascription has no rule: test-id"));
+        .thenThrow(
+            new OperationTopologyResolutionException("Mechanism ascription has no rule: test-id"));
 
     OperationRequestDto request = new OperationRequestDto(mechanismAscId, Map.of());
 
@@ -259,15 +258,15 @@ class OperationServiceTest {
     when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
 
     // Dispatcher returns a map missing the required "value" field
-    EffectDispatcher invalidResponseDispatcher =
-        new EffectDispatcher() {
+    EffectDispatchService invalidResponseDispatcher =
+        new EffectDispatchService() {
           @Override
-          public boolean supports(EffectRecord effect) {
+          public boolean supports(EffectDto effect) {
             return true;
           }
 
           @Override
-          public Map<String, Object> dispatch(EffectRecord effect) {
+          public Map<String, Object> dispatch(EffectDto effect) {
             return Map.of("wrongField", 42);
           }
         };

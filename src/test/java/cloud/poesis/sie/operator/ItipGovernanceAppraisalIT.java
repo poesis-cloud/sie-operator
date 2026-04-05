@@ -51,6 +51,13 @@ class ItipGovernanceAppraisalIT {
   static final UUID RECEPTOR_ASC_ID = UUID.fromString("00000001-0001-0001-0001-000000000014");
   static final UUID EFFECTOR_ASC_ID = UUID.fromString("00000001-0001-0001-0001-000000000015");
 
+  // Operator identity IDs (simulates bootstrap registration)
+  static final UUID OPERATOR_MECHANISM_ASC_ID =
+      UUID.fromString("00000001-0001-0001-0001-00000000aa00");
+  static final UUID OPERATOR_RECEPTOR_ASC_ID =
+      UUID.fromString("00000001-0001-0001-0001-00000000aa01");
+  static final UUID INTERACTION_ASC_ID = UUID.fromString("00000001-0001-0001-0001-00000000bb01");
+
   /**
    * The real ITIP Starlark rule for DIRECTIVE_NORM_OPERATIONALIZATION — copied verbatim from
    * itip/def/frameworks/itip/governance/DIRECTIVE_NORM_OPERATIONALIZATION.mechanism.ascription.statement.json
@@ -259,12 +266,50 @@ class ItipGovernanceAppraisalIT {
     }
 
     private MockResponse dispatchAscriptionQuery(String path) throws Exception {
-      if (path.contains("type=RECEPTOR")) {
+      if (path.contains("type=MECHANISM") && path.contains("function=run-operation")) {
+        return halResponse(List.of(operatorMechanismAscription()));
+      } else if (path.contains("type=RECEPTOR")
+          && path.contains(OPERATOR_MECHANISM_ASC_ID.toString())) {
+        return halResponse(List.of(operatorReceptorAscription()));
+      } else if (path.contains("type=RECEPTOR")) {
         return halResponse(List.of(receptorAscription()));
       } else if (path.contains("type=EFFECTOR")) {
         return halResponse(List.of(effectorAscription()));
+      } else if (path.contains("type=INTERACTION")) {
+        return halResponse(List.of(interactionAscription()));
       }
       return halResponse(List.of());
+    }
+
+    // -- Operator mechanism ascription (run-operation) --
+
+    private static JsonNode operatorMechanismAscription() {
+      ObjectNode asc = MAPPER.createObjectNode();
+      asc.put("id", OPERATOR_MECHANISM_ASC_ID.toString());
+      asc.put("version", 1);
+      asc.put("status", "ACTIVE");
+
+      ObjectNode stmt = MAPPER.createObjectNode();
+      stmt.put("function", "run-operation");
+      asc.set("statement", stmt);
+
+      return asc;
+    }
+
+    // -- Operator receptor ascription (operator's own receptor) --
+
+    private static JsonNode operatorReceptorAscription() {
+      ObjectNode asc = MAPPER.createObjectNode();
+      asc.put("id", OPERATOR_RECEPTOR_ASC_ID.toString());
+      asc.put("version", 1);
+      asc.put("status", "ACTIVE");
+
+      ObjectNode stmt = MAPPER.createObjectNode();
+      stmt.put("mechanism", OPERATOR_MECHANISM_ASC_ID.toString());
+      stmt.put("archetype", UUID.randomUUID().toString());
+      asc.set("statement", stmt);
+
+      return asc;
     }
 
     // -- Mechanism ascription (DIRECTIVE_NORM_OPERATIONALIZATION) --
@@ -314,6 +359,22 @@ class ItipGovernanceAppraisalIT {
       ObjectNode stmt = MAPPER.createObjectNode();
       stmt.put("mechanism", MECHANISM_ASC_ID.toString());
       stmt.put("archetype", FINDING_ARCH_ASC_ID.toString());
+      asc.set("statement", stmt);
+
+      return asc;
+    }
+
+    // -- Interaction ascription (effector → operator receptor wiring) --
+
+    private static JsonNode interactionAscription() {
+      ObjectNode asc = MAPPER.createObjectNode();
+      asc.put("id", INTERACTION_ASC_ID.toString());
+      asc.put("version", 1);
+      asc.put("status", "ACTIVE");
+
+      ObjectNode stmt = MAPPER.createObjectNode();
+      stmt.put("effector", EFFECTOR_ASC_ID.toString());
+      stmt.put("receptor", OPERATOR_RECEPTOR_ASC_ID.toString());
       asc.set("statement", stmt);
 
       return asc;

@@ -5,25 +5,32 @@ import cloud.poesis.sie.operator.dto.EffectorAscriptionDto;
 import cloud.poesis.sie.operator.dto.InteractionAscriptionDto;
 import cloud.poesis.sie.operator.dto.MechanismAscriptionDto;
 import cloud.poesis.sie.operator.dto.ReceptorAscriptionDto;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Component
 public class DefinitionManagerClient {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   private final WebClient webClient;
 
   public DefinitionManagerClient(WebClient definitionManagerWebClient) {
     this.webClient = definitionManagerWebClient.mutate().build();
   }
+
+  // --- Read operations ---
 
   public MechanismAscriptionDto getMechanismAscription(UUID ascriptionId) {
     return getAscription(ascriptionId, MechanismAscriptionDto.class);
@@ -59,6 +66,57 @@ public class DefinitionManagerClient {
             .block();
     return extractEmbeddedList(body, InteractionAscriptionDto.class);
   }
+
+  /**
+   * Finds a single ascription by type and statement field filters. Returns the first match, or
+   * empty if none found.
+   */
+  public Optional<JsonNode> findAscription(String type, Map<String, String> statementFilters) {
+    JsonNode body =
+        webClient
+            .get()
+            .uri(
+                uriBuilder -> {
+                  uriBuilder.path("/api/v1/ascriptions").queryParam("type", type);
+                  statementFilters.forEach(
+                      (key, value) -> uriBuilder.queryParam("statement." + key, value));
+                  return uriBuilder.build();
+                })
+            .retrieve()
+            .bodyToMono(JsonNode.class)
+            .block();
+    if (body == null) {
+      return Optional.empty();
+    }
+    JsonNode embedded = body.path("_embedded").path("ascriptionDtoList");
+    if (embedded.isMissingNode() || !embedded.isArray() || embedded.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(embedded.get(0));
+  }
+
+  // --- Write operations ---
+
+  /**
+   * Creates an ascription on the Definition Manager. Returns the created ascription response
+   * (including the assigned ID).
+   */
+  public JsonNode createAscription(UUID archetypeId, JsonNode statement) {
+    return webClient
+        .post()
+        .uri("/api/v1/ascriptions")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            MAPPER
+                .createObjectNode()
+                .put("archetypeId", archetypeId.toString())
+                .set("statement", statement))
+        .retrieve()
+        .bodyToMono(JsonNode.class)
+        .block();
+  }
+
+  // --- Internal ---
 
   private <T> T getAscription(UUID ascriptionId, Class<T> type) {
     return webClient

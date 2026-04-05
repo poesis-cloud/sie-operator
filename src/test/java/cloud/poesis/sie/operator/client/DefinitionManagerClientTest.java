@@ -7,8 +7,12 @@ import cloud.poesis.sie.operator.dto.EffectorAscriptionDto;
 import cloud.poesis.sie.operator.dto.InteractionAscriptionDto;
 import cloud.poesis.sie.operator.dto.MechanismAscriptionDto;
 import cloud.poesis.sie.operator.dto.ReceptorAscriptionDto;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -208,5 +212,88 @@ class DefinitionManagerClientTest {
 
     List<EffectorAscriptionDto> result = client.findEffectors(UUID.randomUUID());
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  void findAscriptionReturnsFirstMatchWhenFound() throws InterruptedException {
+    UUID ascId = UUID.fromString("01961234-5678-7000-8000-000000000050");
+    String response =
+        """
+        {
+          "_embedded": {
+            "ascriptionDtoList": [
+              {
+                "id": "01961234-5678-7000-8000-000000000050",
+                "statement": {"title": "StructureArchetype", "type": "object"},
+                "version": 1,
+                "status": "ACTIVE"
+              }
+            ]
+          },
+          "page": {"size": 20, "totalElements": 1, "totalPages": 1, "number": 0}
+        }
+        """;
+    server.enqueue(
+        new MockResponse().setBody(response).setHeader("Content-Type", "application/json"));
+
+    Optional<JsonNode> result =
+        client.findAscription("ARCHETYPE", Map.of("title", "StructureArchetype"));
+
+    assertThat(result).isPresent();
+    assertThat(result.get().path("id").asText()).isEqualTo(ascId.toString());
+    RecordedRequest request = server.takeRequest();
+    assertThat(request.getPath()).contains("type=ARCHETYPE");
+    assertThat(request.getPath()).contains("statement.title=StructureArchetype");
+  }
+
+  @Test
+  void findAscriptionReturnsEmptyWhenNotFound() {
+    String response =
+        """
+        {
+          "page": {"size": 20, "totalElements": 0, "totalPages": 0, "number": 0}
+        }
+        """;
+    server.enqueue(
+        new MockResponse().setBody(response).setHeader("Content-Type", "application/json"));
+
+    Optional<JsonNode> result =
+        client.findAscription("STRUCTURE", Map.of("purpose", "nonexistent"));
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void createAscriptionPostsAndReturnsCreated() throws Exception {
+    UUID archetypeId = UUID.fromString("01961234-5678-7000-8000-000000000060");
+    UUID createdId = UUID.fromString("01961234-5678-7000-8000-000000000061");
+    String response =
+        """
+        {
+          "id": "01961234-5678-7000-8000-000000000061",
+          "statement": {"purpose": "sie-operator"},
+          "version": 1,
+          "status": "ACTIVE"
+        }
+        """;
+    server.enqueue(
+        new MockResponse()
+            .setResponseCode(201)
+            .setBody(response)
+            .setHeader("Content-Type", "application/json"));
+
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode statement = mapper.createObjectNode().put("purpose", "sie-operator");
+
+    JsonNode result = client.createAscription(archetypeId, statement);
+
+    assertThat(result.path("id").asText()).isEqualTo(createdId.toString());
+    assertThat(result.path("statement").path("purpose").asText()).isEqualTo("sie-operator");
+    RecordedRequest request = server.takeRequest();
+    assertThat(request.getMethod()).isEqualTo("POST");
+    assertThat(request.getPath()).isEqualTo("/api/v1/ascriptions");
+    JsonNode body = mapper.readTree(request.getBody().readUtf8());
+    assertThat(body.path("archetypeId").asText()).isEqualTo(archetypeId.toString());
+    assertThat(body.path("statement").path("purpose").asText()).isEqualTo("sie-operator");
   }
 }
