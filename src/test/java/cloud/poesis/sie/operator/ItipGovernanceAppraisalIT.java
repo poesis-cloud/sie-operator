@@ -104,7 +104,8 @@ class ItipGovernanceAppraisalIT {
     defmanMock.shutdown();
   }
 
-  // ---------- GAP case: Directive with no norms → AppraisalFinding(GAP, HIGH) ----------
+  // ---------- GAP case: Directive with no norms → AppraisalFinding(GAP, HIGH)
+  // ----------
 
   @Test
   void gapCase_directiveWithNoNorms_producesHighSeverityFinding() {
@@ -114,17 +115,21 @@ class ItipGovernanceAppraisalIT {
 
     Map<String, Object> trigger =
         Map.of(
-            "ruleType", "gsm:rules/appraisal/directive/norm/operationalization",
-            "subjectType", "DIRECTIVE",
-            "subjectDefinitionId", directiveDefId.toString(),
+            "ruleType",
+            "gsm:rules/appraisal/directive/norm/operationalization",
+            "subjectType",
+            "DIRECTIVE",
+            "subjectDefinitionId",
+            directiveDefId.toString(),
             "subject",
-                Map.of(
-                    "structure", STRUCTURE_DEF_ID.toString(),
-                    "modal", "MUST",
-                    "verb", "ENSURE",
-                    "qualifier", qualifierDefId.toString(),
-                    "purpose", purposeDefId.toString()),
-            "relatedAscriptions", List.of());
+            Map.of(
+                "structure", STRUCTURE_DEF_ID.toString(),
+                "modal", "MUST",
+                "verb", "ENSURE",
+                "qualifier", qualifierDefId.toString(),
+                "purpose", purposeDefId.toString()),
+            "relatedAscriptions",
+            List.of());
 
     Map<String, Object> body =
         Map.of("mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "triggerPayload", trigger);
@@ -164,27 +169,30 @@ class ItipGovernanceAppraisalIT {
 
     Map<String, Object> trigger =
         Map.of(
-            "ruleType", "gsm:rules/appraisal/directive/norm/operationalization",
-            "subjectType", "DIRECTIVE",
-            "subjectDefinitionId", directiveDefId.toString(),
+            "ruleType",
+            "gsm:rules/appraisal/directive/norm/operationalization",
+            "subjectType",
+            "DIRECTIVE",
+            "subjectDefinitionId",
+            directiveDefId.toString(),
             "subject",
-                Map.of(
-                    "structure", STRUCTURE_DEF_ID.toString(),
-                    "modal", "MUST",
-                    "verb", "ENSURE",
-                    "qualifier", qualifierDefId.toString(),
-                    "purpose", purposeDefId.toString()),
+            Map.of(
+                "structure", STRUCTURE_DEF_ID.toString(),
+                "modal", "MUST",
+                "verb", "ENSURE",
+                "qualifier", qualifierDefId.toString(),
+                "purpose", purposeDefId.toString()),
             "relatedAscriptions",
-                List.of(
-                    Map.of(
-                        "structure",
-                        purposeDefId.toString(),
-                        "qualifier",
-                        qualifierDefId.toString(),
-                        "applicability",
-                        "true",
-                        "assertion",
-                        "true")));
+            List.of(
+                Map.of(
+                    "structure",
+                    purposeDefId.toString(),
+                    "qualifier",
+                    qualifierDefId.toString(),
+                    "applicability",
+                    "true",
+                    "assertion",
+                    "true")));
 
     Map<String, Object> body =
         Map.of("mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "triggerPayload", trigger);
@@ -202,7 +210,8 @@ class ItipGovernanceAppraisalIT {
     assertThat(effects).isEmpty();
   }
 
-  // ---------- Validation case: invalid trigger payload → validation failure ----------
+  // ---------- Validation case: invalid trigger payload → validation failure
+  // ----------
 
   @Test
   void invalidTrigger_missingRequiredFields_returnsValidationError() {

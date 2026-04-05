@@ -1,7 +1,6 @@
 # Service Package — Reader's Guide
 
-> **Package**: `cloud.poesis.sie.operator.service`
-> **7 files** (1 interface + 4 `@Service`/`@Component` beans + 2 dispatch implementations)
+> **Package**: `cloud.poesis.sie.operator.service` > **7 files** (1 interface + 4 `@Service`/`@Component` beans + 2 dispatch implementations)
 > managing mechanism topology resolution, Starlark rule execution, payload
 > validation, and effect dispatching for the SIE Operator.
 
@@ -78,25 +77,25 @@ No `@Lazy` annotations — no circular dependencies exist in this package.
 
 ### 3.1 Layer 3 — Orchestration
 
-| Service            | Role                                                                                                                                  |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Service            | Role                                                                                                                                                |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `OperationService` | Facade: topology resolution → trigger validation → Starlark execution → effect dispatch (with closed-loop reception validation) → response building |
 
 ### 3.2 Layer 2 — Domain services
 
-| Service                              | Role                                                                                                                                      |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `OperationTopologyResolutionService` | Resolves full GSM topology for a Mechanism via Definition Manager: ports (receptors/effectors), data archetypes, and operability wiring check |
+| Service                              | Role                                                                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OperationTopologyResolutionService` | Resolves full GSM topology for a Mechanism via Definition Manager: ports (receptors/effectors), data archetypes, and operability wiring check     |
 | `OperationExecutionService`          | Sandboxed Starlark rule execution with step budget (`100_000`), `sys` module (receive/effect), and host functions (now, uuid7, fullmatch, search) |
-| `PayloadValidatorService`            | Validates payloads against archetype JSON Schemas (trigger payloads on receptor archetypes, effect payloads on effector archetypes)         |
+| `PayloadValidatorService`            | Validates payloads against archetype JSON Schemas (trigger payloads on receptor archetypes, effect payloads on effector archetypes)               |
 
 ### 3.3 Layer 1 — Effect dispatch
 
-| Service                        | `@Order` | Role                                                                                           |
-| ------------------------------ | -------- | ---------------------------------------------------------------------------------------------- |
-| `EffectDispatchService`        | —        | Interface contract: `supports(EffectDto)` → boolean, `dispatch(EffectDto)` → reception map     |
-| `HttpEffectDispatchService`    | 0        | Dispatches effects containing `targetURI` + `method` via reactive `WebClient`                  |
-| `LoggingEffectDispatchService` | default  | Fallback dispatcher: accepts any effect, logs it, returns `null` (fire-and-forget)             |
+| Service                        | `@Order` | Role                                                                                       |
+| ------------------------------ | -------- | ------------------------------------------------------------------------------------------ |
+| `EffectDispatchService`        | —        | Interface contract: `supports(EffectDto)` → boolean, `dispatch(EffectDto)` → reception map |
+| `HttpEffectDispatchService`    | 0        | Dispatches effects containing `targetURI` + `method` via reactive `WebClient`              |
+| `LoggingEffectDispatchService` | default  | Fallback dispatcher: accepts any effect, logs it, returns `null` (fire-and-forget)         |
 
 The dispatch chain is `@Order`-sorted by Spring: `HttpEffectDispatchService`
 is tried first; `LoggingEffectDispatchService` catches anything unmatched.

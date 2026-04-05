@@ -48,9 +48,9 @@ class OperationServiceTest {
     UUID mechanismAscId = UUID.randomUUID();
     String ruleSource =
         """
-        event = sys.receive("OrderCreated")
-        sys.effect("OrderConfirmation", {"orderId": event["orderId"]})
-        """;
+                event = sys.receive("OrderCreated")
+                sys.effect("OrderConfirmation", {"orderId": event["orderId"]})
+                """;
 
     OperationTopologyDto topology = topologyWithNoSchemas(mechanismAscId, ruleSource);
     when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
@@ -71,17 +71,17 @@ class OperationServiceTest {
     UUID mechanismAscId = UUID.randomUUID();
     String ruleSource =
         """
-        event = sys.receive("AppraisalTrigger")
-        if len(event["relatedAscriptions"]) == 0:
-            sys.effect("AppraisalFinding", {
-                "ruleType": event["ruleType"],
-                "findingType": "GAP",
-                "subjectType": event["subjectType"],
-                "subjectDefinitionId": event["subjectDefinitionId"],
-                "severity": "HIGH",
-                "message": "No norms found"
-            })
-        """;
+                event = sys.receive("AppraisalTrigger")
+                if len(event["relatedAscriptions"]) == 0:
+                    sys.effect("AppraisalFinding", {
+                        "ruleType": event["ruleType"],
+                        "findingType": "GAP",
+                        "subjectType": event["subjectType"],
+                        "subjectDefinitionId": event["subjectDefinitionId"],
+                        "severity": "HIGH",
+                        "message": "No norms found"
+                    })
+                """;
 
     JsonNode triggerSchema = triggerArchetypeSchema();
     JsonNode findingSchema = findingArchetypeSchema();
@@ -169,11 +169,11 @@ class OperationServiceTest {
     UUID mechanismAscId = UUID.randomUUID();
     String ruleSource =
         """
-        event = sys.receive("OrderCreated")
-        result = sys.effect("ValidatePayment", {"amount": event["amount"]}).receive("PaymentResult")
-        if result["valid"]:
-            sys.effect("OrderApproved", {"orderId": event["orderId"]})
-        """;
+                event = sys.receive("OrderCreated")
+                result = sys.effect("ValidatePayment", {"amount": event["amount"]}).receive("PaymentResult")
+                if result["valid"]:
+                    sys.effect("OrderApproved", {"orderId": event["orderId"]})
+                """;
 
     OperationTopologyDto topology = topologyWithNoSchemas(mechanismAscId, ruleSource);
     when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
@@ -238,10 +238,10 @@ class OperationServiceTest {
     UUID mechanismAscId = UUID.randomUUID();
     String ruleSource =
         """
-        event = sys.receive("Trigger")
-        result = sys.effect("Request", {"id": "123"}).receive("Response")
-        val = result["value"]
-        """;
+                event = sys.receive("Trigger")
+                result = sys.effect("Request", {"id": "123"}).receive("Response")
+                val = result["value"]
+                """;
 
     JsonNode responseSchema = responseArchetypeSchema();
 
