@@ -2,7 +2,7 @@ package cloud.poesis.sie.operator.controller;
 
 import cloud.poesis.sie.operator.dto.OperationRequestDto;
 import cloud.poesis.sie.operator.dto.OperationResponseDto;
-import cloud.poesis.sie.operator.exception.OperationTopologyResolutionException;
+import cloud.poesis.sie.operator.exception.OperationFrameResolutionException;
 import cloud.poesis.sie.operator.service.OperationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -35,7 +35,7 @@ public class OperationController {
   @Operation(
       summary = "Execute a mechanism operation",
       description =
-          "Resolves the mechanism topology from the Definition Manager, validates the trigger "
+          "Resolves the mechanism frame from the Definition Manager, validates the trigger "
               + "input against receptor archetype schemas, executes the Starlark rule, validates "
               + "effect outputs against effector archetype schemas, and returns the produced effects.")
   @ApiResponse(
@@ -51,11 +51,11 @@ public class OperationController {
     return ResponseEntity.ok(response);
   }
 
-  @ExceptionHandler(OperationTopologyResolutionException.class)
-  public ProblemDetail handleTopologyResolutionException(OperationTopologyResolutionException ex) {
+  @ExceptionHandler(OperationFrameResolutionException.class)
+  public ProblemDetail handleFrameResolutionException(OperationFrameResolutionException ex) {
     ProblemDetail problem =
         ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
-    problem.setTitle("Operation topology resolution failed");
+    problem.setTitle("Operation frame resolution failed");
     return problem;
   }
 }

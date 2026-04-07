@@ -109,8 +109,8 @@
         <directory>src/main/resources</directory>
       </resource>
       <resource>
-        <directory>def/statements</directory>
-        <targetPath>statements</targetPath>
+        <directory>def/statement</directory>
+        <targetPath>statement</targetPath>
       </resource>
     </resources>
     <plugins>

@@ -1,9 +1,0 @@
-{
-  "$schema": "gsm://archetypes/Archetype/v1",
-  "$id": "itip://frameworks/http/HttpOptionsRequest/effector/v1",
-  "$ref": "itip://archetypes/ReadEffector/v1",
-  "title": "HttpOptionsRequest",
-  "description": "HTTP effector archetype \u2014 OPTIONS request. Extends ReadEffector. This port requests information about the communication options available for the target resource. Source: RFC 9110 \u00a79.3.7 \u2014 OPTIONS.",
-  "type": "object",
-  "unevaluatedProperties": false
-}

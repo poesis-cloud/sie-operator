@@ -1,0 +1,16 @@
+{
+  "$schema": "gsmarc://gsm/Archetype/v1",
+  "$id": "gsmarc://ops/protocols/relay/RelaySignal/v1",
+  "title": "RelaySignal",
+  "description": "Types the causal signal propagated through a Relay Interaction from one mechanism to the next within an operation chain. The body carries the causal content that triggers the downstream mechanism's activation. At protocol level, unconstrained; extending archetypes constrain it to a domain-specific shape via $ref/allOf composition.",
+  "type": "object",
+  "required": [
+    "body"
+  ],
+  "properties": {
+    "body": {
+      "description": "Causal signal content. At protocol level, unconstrained; extending archetypes constrain this to a domain-specific shape via $ref/allOf composition."
+    }
+  },
+  "unevaluatedProperties": false
+}

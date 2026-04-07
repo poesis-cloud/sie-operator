@@ -2,11 +2,11 @@ package cloud.poesis.sie.operator.service;
 
 import cloud.poesis.sie.operator.dto.ArchetypeAscriptionDto;
 import cloud.poesis.sie.operator.dto.EffectDto;
+import cloud.poesis.sie.operator.dto.OperationFrameDto;
 import cloud.poesis.sie.operator.dto.OperationRequestDto;
 import cloud.poesis.sie.operator.dto.OperationResponseDto;
-import cloud.poesis.sie.operator.dto.OperationTopologyDto;
 import cloud.poesis.sie.operator.dto.ReceptorAscriptionDto;
-import cloud.poesis.sie.operator.exception.OperationTopologyResolutionException;
+import cloud.poesis.sie.operator.exception.OperationFrameResolutionException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
@@ -20,42 +20,42 @@ public class OperationService {
 
   private static final Logger log = LoggerFactory.getLogger(OperationService.class);
 
-  private final OperationTopologyResolutionService topologyResolver;
+  private final OperationFrameResolutionService frameResolver;
   private final OperationInputValidationService inputValidator;
   private final OperationExecutionService sandbox;
   private final List<MechanismEffectorExecutionService> dispatchers;
 
   public OperationService(
-      OperationTopologyResolutionService topologyResolver,
+      OperationFrameResolutionService frameResolver,
       OperationInputValidationService inputValidator,
       OperationExecutionService sandbox,
       List<MechanismEffectorExecutionService> dispatchers) {
-    this.topologyResolver = topologyResolver;
+    this.frameResolver = frameResolver;
     this.inputValidator = inputValidator;
     this.sandbox = sandbox;
     this.dispatchers = List.copyOf(dispatchers);
   }
 
   public OperationResponseDto operate(OperationRequestDto request) {
-    OperationTopologyDto topology;
+    OperationFrameDto frame;
     try {
-      topology = topologyResolver.resolve(request.mechanismAscriptionId());
-    } catch (OperationTopologyResolutionException e) {
+      frame = frameResolver.resolve(request.mechanismAscriptionId());
+    } catch (OperationFrameResolutionException e) {
       return OperationResponseDto.failure(e.getMessage());
     }
 
-    String ruleSource = topology.getRuleSource();
-    String mechanismId = topology.mechanism().id().toString();
+    String ruleSource = frame.getRuleSource();
+    String mechanismId = frame.mechanism().id().toString();
 
     log.debug(
         "Executing mechanism {} with {} receptors, {} effectors",
         mechanismId,
-        topology.receptors().size(),
-        topology.effectors().size());
+        frame.receptors().size(),
+        frame.effectors().size());
 
     // Validate trigger input against receptor schemas
     OperationInputValidationService.ValidationResult triggerValidation =
-        validateOperationInput(request.operationInput(), topology);
+        validateOperationInput(request.operationInput(), frame);
     if (!triggerValidation.isValid()) {
       return OperationResponseDto.failure(
           "Trigger input validation failed against '"
@@ -69,7 +69,7 @@ public class OperationService {
             mechanismId,
             ruleSource,
             request.operationInput(),
-            effect -> dispatchAndValidateReception(effect, topology));
+            effect -> dispatchAndValidateReception(effect, frame));
 
     if (!result.success()) {
       log.warn("Mechanism {} execution failed: {}", mechanismId, result.error());
@@ -81,27 +81,31 @@ public class OperationService {
   }
 
   private OperationInputValidationService.ValidationResult validateOperationInput(
-      Map<String, Object> operationInput, OperationTopologyDto topology) {
-    if (topology.receptors().isEmpty()) {
-      log.debug("No receptors in topology — skipping trigger validation");
+      Map<String, Object> operationInput, OperationFrameDto frame) {
+    if (frame.receptors().isEmpty()) {
+      log.debug("No receptors in frame — skipping trigger validation");
       return OperationInputValidationService.ValidationResult.valid();
     }
 
-    for (ReceptorAscriptionDto receptor : topology.receptors()) {
-      Optional<ArchetypeAscriptionDto> archetype = topology.findArchetype(receptor.archetype());
+    OperationInputValidationService.ValidationResult lastFailure = null;
+    for (ReceptorAscriptionDto receptor : frame.receptors()) {
+      Optional<ArchetypeAscriptionDto> archetype = frame.findArchetype(receptor.archetype());
       if (archetype.isPresent()) {
         OperationInputValidationService.ValidationResult result =
             inputValidator.validate(
                 archetype.get().title(), operationInput, archetype.get().schema());
-        if (!result.isValid()) {
+        if (result.isValid()) {
           return result;
         }
+        lastFailure = result;
       }
     }
-    return OperationInputValidationService.ValidationResult.valid();
+    return lastFailure != null
+        ? lastFailure
+        : OperationInputValidationService.ValidationResult.valid();
   }
 
-  private Object dispatchAndValidateReception(EffectDto effect, OperationTopologyDto topology) {
+  private Object dispatchAndValidateReception(EffectDto effect, OperationFrameDto frame) {
     for (MechanismEffectorExecutionService dispatcher : dispatchers) {
       if (dispatcher.supports(effect)) {
         log.debug(
@@ -110,7 +114,7 @@ public class OperationService {
             dispatcher.getClass().getSimpleName());
         Map<String, Object> reception = dispatcher.dispatch(effect);
         if (effect.closedLoop() && reception != null) {
-          validateReception(effect.feedbackArchetype(), reception, topology);
+          validateReception(effect.feedbackArchetype(), reception, frame);
         }
         return reception;
       }
@@ -120,8 +124,8 @@ public class OperationService {
   }
 
   private void validateReception(
-      String feedbackArchetype, Map<String, Object> reception, OperationTopologyDto topology) {
-    Optional<JsonNode> schema = topology.findSchema(feedbackArchetype);
+      String feedbackArchetype, Map<String, Object> reception, OperationFrameDto frame) {
+    Optional<JsonNode> schema = frame.findSchema(feedbackArchetype);
     if (schema.isPresent()) {
       OperationInputValidationService.ValidationResult result =
           inputValidator.validate(feedbackArchetype, reception, schema.get());

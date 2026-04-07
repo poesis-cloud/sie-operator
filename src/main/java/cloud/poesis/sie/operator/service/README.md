@@ -1,12 +1,12 @@
 # Service Package — Reader's Guide
 
-> **Package**: `cloud.poesis.sie.operator.service` > **7 files** (1 interface + 4 `@Service`/`@Component` beans + 2 dispatch implementations)
-> managing mechanism topology resolution, Starlark rule execution, payload
-> validation, and effect dispatching for the SIE Operator.
+> **Package**: `cloud.poesis.sie.operator.service` — **7 files** (1 interface + 4 `@Service`/`@Component` beans + 2 dispatch implementations)
+> managing mechanism frame resolution, Starlark rule execution, input
+> validation, and effector dispatching for the SIE Operator.
 
 ---
 
-## 1. Package topology
+## 1. Package structure
 
 The service package is organized in three dependency layers. Every
 dependency arrow points **downward**; no lower layer depends on a higher one.
@@ -14,32 +14,32 @@ dependency arrow points **downward**; no lower layer depends on a higher one.
 ```
 Layer 3 — Orchestration           OperationService (facade)
     │  delegates to
-Layer 2 — Domain services         topology resolution, execution, validation
+Layer 2 — Domain services         frame resolution, execution, validation
     │  consumes
-Layer 1 — Effect dispatch         dispatch interface + ordered implementations
+Layer 1 — Effector dispatch       dispatch interface + ordered implementations
 ```
 
 ### Layer 3: Orchestration
 
 `OperationService` is the **facade** that owns the full operation flow:
-resolve topology → validate trigger payload → execute Starlark rule →
+resolve frame → validate trigger input → execute Starlark rule →
 dispatch effects → validate closed-loop receptions → build response.
 It injects all Layer 2 services and the ordered dispatch chain.
 
 ### Layer 2: Domain services
 
 ```
-OperationTopologyResolutionService     resolves GSM topology from Definition Manager
+OperationFrameResolutionService        resolves GSM operation frame from Definition Manager
 OperationExecutionService              sandboxed Starlark rule execution
-PayloadValidatorService                JSON Schema validation of trigger/effect payloads
+OperationInputValidationService        JSON Schema validation of trigger inputs and effect outputs
 ```
 
-### Layer 1: Effect dispatch
+### Layer 1: Effector dispatch
 
 ```
-EffectDispatchService                  interface: supports(effect) + dispatch(effect)
-├── HttpEffectDispatchService          @Order(0) — HTTP dispatch for effects with targetURI/method
-└── LoggingEffectDispatchService       @Order (lowest) — fallback: logs effect, returns null
+MechanismEffectorExecutionService      interface: supports(effect) + dispatch(effect)
+├── MechanismHttpEffectorExecutionService   @Order(0) — HTTP dispatch for effects with targetUri/method
+└── MechanismRelayEffectorExecutionService  @Order(LOWEST_PRECEDENCE) — fallback: in-memory relay
 ```
 
 ---
@@ -48,24 +48,24 @@ EffectDispatchService                  interface: supports(effect) + dispatch(ef
 
 ```
 OperationService (L3, facade)
-│   consumes: OperationTopologyResolutionService (L2)
-│             PayloadValidatorService (L2)
+│   consumes: OperationFrameResolutionService (L2)
+│             OperationInputValidationService (L2)
 │             OperationExecutionService (L2)
-│             List<EffectDispatchService> (L1, ordered)
+│             List<MechanismEffectorExecutionService> (L1, ordered)
 
-OperationTopologyResolutionService (L2)
+OperationFrameResolutionService (L2)
 │   consumes: DefinitionManagerClient (client package)
 
 OperationExecutionService (L2)
-│   consumes: MechanismRuleApiConfig (config package) — Starlark host functions
+│   consumes: SandboxFactory (functional interface from OperationSandboxConfig)
 
-PayloadValidatorService (L2)
+OperationInputValidationService (L2)
 │   consumes: (none — stateless, no-arg constructor)
 
-HttpEffectDispatchService (L1)
+MechanismHttpEffectorExecutionService (L1)
 │   consumes: WebClient.Builder (Spring-provided)
 
-LoggingEffectDispatchService (L1)
+MechanismRelayEffectorExecutionService (L1)
 │   consumes: (none — stateless)
 ```
 
@@ -77,40 +77,39 @@ No `@Lazy` annotations — no circular dependencies exist in this package.
 
 ### 3.1 Layer 3 — Orchestration
 
-| Service            | Role                                                                                                                                                |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OperationService` | Facade: topology resolution → trigger validation → Starlark execution → effect dispatch (with closed-loop reception validation) → response building |
+| Service            | Role                                                                                                                                               |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OperationService` | Facade: frame resolution → trigger validation → Starlark execution → effector dispatch (with closed-loop reception validation) → response building |
 
 ### 3.2 Layer 2 — Domain services
 
-| Service                              | Role                                                                                                                                              |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OperationTopologyResolutionService` | Resolves full GSM topology for a Mechanism via Definition Manager: ports (receptors/effectors), data archetypes, and operability wiring check     |
-| `OperationExecutionService`          | Sandboxed Starlark rule execution with step budget (`100_000`), `sys` module (receive/effect), and host functions (now, uuid7, fullmatch, search) |
-| `PayloadValidatorService`            | Validates payloads against archetype JSON Schemas (trigger payloads on receptor archetypes, effect payloads on effector archetypes)               |
+| Service                           | Role                                                                                                                                                 |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OperationFrameResolutionService` | Resolves full GSM operation frame for a Mechanism via Definition Manager: ports (receptors/effectors), data archetypes, and operability wiring check |
+| `OperationExecutionService`       | Sandboxed Starlark rule execution with step budget (`100_000`), `sys` module (receive/effect), and host functions (now, uuid7, fullmatch, search)    |
+| `OperationInputValidationService` | Validates inputs against archetype JSON Schemas (trigger inputs on receptor archetypes, closed-loop responses on feedback archetypes)                |
 
-### 3.3 Layer 1 — Effect dispatch
+### 3.3 Layer 1 — Effector dispatch
 
-| Service                        | `@Order` | Role                                                                                       |
-| ------------------------------ | -------- | ------------------------------------------------------------------------------------------ |
-| `EffectDispatchService`        | —        | Interface contract: `supports(EffectDto)` → boolean, `dispatch(EffectDto)` → reception map |
-| `HttpEffectDispatchService`    | 0        | Dispatches effects containing `targetURI` + `method` via reactive `WebClient`              |
-| `LoggingEffectDispatchService` | default  | Fallback dispatcher: accepts any effect, logs it, returns `null` (fire-and-forget)         |
+| Service                                  | `@Order`          | Role                                                                                                    |
+| ---------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------- |
+| `MechanismEffectorExecutionService`      | —                 | Interface contract: `supports(EffectDto)` → boolean, `dispatch(EffectDto)` → reception map              |
+| `MechanismHttpEffectorExecutionService`  | 0                 | Dispatches effects containing `targetUri` + `method` via reactive `WebClient`                           |
+| `MechanismRelayEffectorExecutionService` | LOWEST_PRECEDENCE | Generic fallback: accepts any effect with a non-null effectorArchetype, relays data as in-memory signal |
 
-The dispatch chain is `@Order`-sorted by Spring: `HttpEffectDispatchService`
-is tried first; `LoggingEffectDispatchService` catches anything unmatched.
+The dispatch chain is `@Order`-sorted by Spring: `MechanismHttpEffectorExecutionService`
+is tried first; `MechanismRelayEffectorExecutionService` catches anything unmatched.
 
 ---
 
 ## 4. Operation flow (OperationService.operate)
 
 ```
-1. Resolve topology        → OperationTopologyResolutionService.resolve(mechanismId)
-2. Validate trigger        → PayloadValidatorService.validate(payload, receptorSchema)
+1. Resolve frame           → OperationFrameResolutionService.resolve(mechanismId)
+2. Validate trigger        → OperationInputValidationService.validate(input, receptorSchema)
 3. Execute rule            → OperationExecutionService.execute(rule, sysModule)
 4. For each effect:
-   4a. Validate effect     → PayloadValidatorService.validate(data, effectorSchema)
-   4b. Dispatch effect     → first EffectDispatchService.supports() match
-   4c. If closed-loop:     → PayloadValidatorService.validate(reception, feedbackSchema)
+   4a. Dispatch effect     → first MechanismEffectorExecutionService.supports() match
+   4b. If closed-loop:     → OperationInputValidationService.validate(reception, feedbackSchema)
 5. Build response          → OperationResponseDto(success, effects, error)
 ```

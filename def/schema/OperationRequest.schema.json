@@ -1,10 +1,10 @@
 {
-  "$schema": "gsm://archetypes/Archetype/v1",
-  "$id": "sie-operator://archetypes/OperationRequest/v1",
+  "$schema": "gsmarc://gsm/Archetype/v1",
+  "$id": "gsmarc://ops/OperationRequest/v1",
   "title": "OperationRequest",
   "description": "SIE Operator receptor archetype — operation request contract. Defines the shape of an operation trigger received by the operator's run-operation mechanism. Client mechanisms wire an Effector to this receptor via an Interaction to declare operability.",
   "type": "object",
-  "required": [ "mechanismAscriptionId", "triggerPayload" ],
+  "required": [ "mechanismAscriptionId", "operationInput" ],
   "properties": {
     "mechanismAscriptionId": {
       "type": "string",
@@ -12,9 +12,9 @@
       "$gsm:queryable": true,
       "description": "The ascription ID of the client mechanism to execute."
     },
-    "triggerPayload": {
+    "operationInput": {
       "type": "object",
-      "description": "The trigger payload — validated against the mechanism's trigger receptor archetype schema at execution time."
+      "description": "The operation input — validated against the mechanism's trigger receptor archetype schema at execution time."
     }
   },
   "unevaluatedProperties": false

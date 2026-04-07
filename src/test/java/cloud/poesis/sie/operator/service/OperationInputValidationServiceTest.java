@@ -2,8 +2,11 @@ package cloud.poesis.sie.operator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -124,5 +127,107 @@ class OperationInputValidationServiceTest {
     // Missing nested required
     Map<String, Object> invalid = Map.of("subject", Map.of());
     assertThat(validator.validate("Test", invalid, schema).isValid()).isFalse();
+  }
+
+  // --- HTTP schema coherence tests (loaded from classpath) ---
+
+  @Test
+  void httpRequestSchemaAcceptsGetWithOnlyMethodAndTargetUri() throws IOException {
+    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.json");
+
+    Map<String, Object> getRequest = Map.of("method", "GET", "targetUri", "/api/items");
+
+    OperationInputValidationService.ValidationResult result =
+        validator.validate("HttpRequest", getRequest, schema);
+
+    assertThat(result.isValid())
+        .as("GET request with only method + targetUri must pass HttpRequest schema")
+        .isTrue();
+  }
+
+  @Test
+  void httpRequestSchemaAcceptsPostWithBody() throws IOException {
+    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.json");
+
+    Map<String, Object> postRequest =
+        Map.of(
+            "method", "POST",
+            "targetUri", "/api/orders",
+            "contentType", "application/json",
+            "body", Map.of("orderId", "ORD-001"));
+
+    OperationInputValidationService.ValidationResult result =
+        validator.validate("HttpRequest", postRequest, schema);
+
+    assertThat(result.isValid())
+        .as("POST request with method, targetUri, contentType, and body must pass")
+        .isTrue();
+  }
+
+  @Test
+  void httpRequestSchemaRejectsWithoutMethod() throws IOException {
+    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.json");
+
+    Map<String, Object> noMethod = Map.of("targetUri", "/api/items");
+
+    OperationInputValidationService.ValidationResult result =
+        validator.validate("HttpRequest", noMethod, schema);
+
+    assertThat(result.isValid()).isFalse();
+    assertThat(result.errors()).contains("method");
+  }
+
+  @Test
+  void httpResponseSchemaAcceptsNoContentWithOnlyStatusCode() throws IOException {
+    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.json");
+
+    Map<String, Object> noContent = Map.of("statusCode", 204);
+
+    OperationInputValidationService.ValidationResult result =
+        validator.validate("HttpResponse", noContent, schema);
+
+    assertThat(result.isValid())
+        .as("204 No Content with only statusCode must pass HttpResponse schema")
+        .isTrue();
+  }
+
+  @Test
+  void httpResponseSchemaAcceptsFullResponse() throws IOException {
+    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.json");
+
+    Map<String, Object> fullResponse =
+        Map.of("statusCode", 200, "contentType", "application/json", "body", "{\"ok\":true}");
+
+    OperationInputValidationService.ValidationResult result =
+        validator.validate("HttpResponse", fullResponse, schema);
+
+    assertThat(result.isValid())
+        .as("200 response with statusCode, contentType, and body must pass")
+        .isTrue();
+  }
+
+  @Test
+  void httpResponseSchemaRejectsWithoutStatusCode() throws IOException {
+    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.json");
+
+    Map<String, Object> noStatus = Map.of("body", "some body");
+
+    OperationInputValidationService.ValidationResult result =
+        validator.validate("HttpResponse", noStatus, schema);
+
+    assertThat(result.isValid()).isFalse();
+    assertThat(result.errors()).contains("statusCode");
+  }
+
+  private JsonNode loadSchema(String classPathResource) throws IOException {
+    try (InputStream is = getClass().getClassLoader().getResourceAsStream(classPathResource)) {
+      assertThat(is).as("Schema not found on classpath: " + classPathResource).isNotNull();
+      ObjectNode schema = (ObjectNode) MAPPER.readTree(is);
+      // Strip GSM-level annotations that are not JSON Schema meta-schema pointers;
+      // in production, archetype schemas arrive from defman without these fields.
+      schema.remove("$schema");
+      schema.remove("$id");
+      return schema;
+    }
   }
 }

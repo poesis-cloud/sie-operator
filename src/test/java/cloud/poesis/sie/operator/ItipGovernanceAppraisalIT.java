@@ -27,7 +27,7 @@ import org.springframework.test.context.DynamicPropertySource;
  * Integration test exercising the full CP execution flow with ITIP governance artifacts
  * (DIRECTIVE_NORM_OPERATIONALIZATION mechanism) against a mocked Definition Manager.
  *
- * <p>Simulates the complete topology resolution: Mechanism → Receptor (AppraisalTrigger) → Effector
+ * <p>Simulates the complete frame resolution: Mechanism → Receptor (AppraisalTrigger) → Effector
  * (AppraisalFinding) → Archetype schemas. Uses the real ITIP Starlark rule to verify both GAP and
  * COVERED appraisal cases end-to-end.
  */

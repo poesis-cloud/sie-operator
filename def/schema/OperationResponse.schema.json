@@ -1,8 +1,8 @@
 {
-  "$schema": "gsm://archetypes/Archetype/v1",
-  "$id": "sie-operator://archetypes/OperationResult/v1",
-  "title": "OperationResult",
-  "description": "SIE Operator effector archetype — operation result contract. Defines the shape of an operation outcome emitted by the operator's run-operation mechanism.",
+  "$schema": "gsmarc://gsm/Archetype/v1",
+  "$id": "gsmarc://ops/OperationResponse/v1",
+  "title": "OperationResponse",
+  "description": "SIE Operator effector archetype — operation response contract. Defines the shape of an operation outcome emitted by the operator's run-operation mechanism.",
   "type": "object",
   "required": [ "success" ],
   "properties": {

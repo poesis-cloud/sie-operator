@@ -29,8 +29,8 @@ public class StructureSeedRunner implements ApplicationRunner {
   private static final Logger log = LoggerFactory.getLogger(StructureSeedRunner.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private static final String STATEMENTS_DIR =
-      "statements/"; // mapped from def/statements/ via pom.xml
+  private static final String STATEMENT_DIR =
+      "statement/"; // mapped from def/statement/ via pom.xml
 
   private final DefinitionManagerClient client;
 
@@ -43,25 +43,25 @@ public class StructureSeedRunner implements ApplicationRunner {
     log.info("Bootstrapping SIE Operator identity on Definition Manager...");
 
     UUID baseArchetypeId = resolveBaseArchetypeId("Archetype");
-    UUID structureArchetypeId = resolveBaseArchetypeId("StructureArchetype");
-    UUID mechanismArchetypeId = resolveBaseArchetypeId("MechanismArchetype");
-    UUID receptorArchetypeId = resolveBaseArchetypeId("ReceptorArchetype");
-    UUID effectorArchetypeId = resolveBaseArchetypeId("EffectorArchetype");
+    UUID structureArchetypeId = resolveBaseArchetypeId("Structure");
+    UUID mechanismArchetypeId = resolveBaseArchetypeId("Mechanism");
+    UUID receptorArchetypeId = resolveBaseArchetypeId("Receptor");
+    UUID effectorArchetypeId = resolveBaseArchetypeId("Effector");
 
-    // 1. Register custom archetypes (OperationRequest, OperationResult)
+    // 1. Register custom archetypes (OperationRequest, OperationResponse)
     UUID operationRequestArchId =
         ensureAscription(
             "ARCHETYPE",
             Map.of("title", "OperationRequest"),
             baseArchetypeId,
-            "OperationRequest.Archetype.archetype.ascription.statement.json");
+            "OperationRequest.json");
 
-    UUID operationResultArchId =
+    UUID operationResponseArchId =
         ensureAscription(
             "ARCHETYPE",
-            Map.of("title", "OperationResult"),
+            Map.of("title", "OperationResponse"),
             baseArchetypeId,
-            "OperationResult.Archetype.archetype.ascription.statement.json");
+            "OperationResponse.json");
 
     // 2. Register Structure
     UUID structureAscId =
@@ -69,7 +69,7 @@ public class StructureSeedRunner implements ApplicationRunner {
             "STRUCTURE",
             Map.of("purpose", "sie-operator"),
             structureArchetypeId,
-            "SieOperator.Structure.structure.ascription.statement.json");
+            "OperatorStructure.json");
 
     // 3. Register Mechanism (resolve structure reference in statement)
     UUID mechanismAscId = ensureMechanism(mechanismArchetypeId, structureAscId);
@@ -80,7 +80,7 @@ public class StructureSeedRunner implements ApplicationRunner {
 
     // 5. Register Effector on the mechanism
     UUID effectorAscId =
-        ensurePort("EFFECTOR", effectorArchetypeId, mechanismAscId, operationResultArchId);
+        ensurePort("EFFECTOR", effectorArchetypeId, mechanismAscId, operationResponseArchId);
 
     log.info(
         "SIE Operator identity registered — structure={}, mechanism={}, receptor={}, effector={}",
@@ -130,8 +130,7 @@ public class StructureSeedRunner implements ApplicationRunner {
       return id;
     }
 
-    ObjectNode statement =
-        (ObjectNode) loadStatement("RunOperation.Mechanism.mechanism.ascription.statement.json");
+    ObjectNode statement = (ObjectNode) loadStatement("OperatorMechanism.json");
     // Resolve template variable: replace ${sie.operator.structure.ascriptionId}
     statement.put("structure", structureAscId.toString());
     JsonNode created = client.createAscription(mechanismArchetypeId, statement);
@@ -162,7 +161,7 @@ public class StructureSeedRunner implements ApplicationRunner {
   }
 
   private JsonNode loadStatement(String fileName) {
-    ClassPathResource resource = new ClassPathResource(STATEMENTS_DIR + fileName);
+    ClassPathResource resource = new ClassPathResource(STATEMENT_DIR + fileName);
     try (InputStream is = resource.getInputStream()) {
       return MAPPER.readTree(is);
     } catch (IOException e) {

@@ -8,11 +8,11 @@ import cloud.poesis.sie.operator.dto.ArchetypeAscriptionDto;
 import cloud.poesis.sie.operator.dto.EffectDto;
 import cloud.poesis.sie.operator.dto.EffectorAscriptionDto;
 import cloud.poesis.sie.operator.dto.MechanismAscriptionDto;
+import cloud.poesis.sie.operator.dto.OperationFrameDto;
 import cloud.poesis.sie.operator.dto.OperationRequestDto;
 import cloud.poesis.sie.operator.dto.OperationResponseDto;
-import cloud.poesis.sie.operator.dto.OperationTopologyDto;
 import cloud.poesis.sie.operator.dto.ReceptorAscriptionDto;
-import cloud.poesis.sie.operator.exception.OperationTopologyResolutionException;
+import cloud.poesis.sie.operator.exception.OperationFrameResolutionException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -31,7 +31,7 @@ class OperationServiceTest {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  @Mock private OperationTopologyResolutionService topologyResolver;
+  @Mock private OperationFrameResolutionService frameResolver;
 
   private OperationInputValidationService inputValidator;
   private OperationExecutionService sandbox;
@@ -43,6 +43,7 @@ class OperationServiceTest {
     sandbox = new OperationExecutionService(OperationSandboxConfig::createSandbox);
     List<MechanismEffectorExecutionService> dispatchers =
         List.of(
+            new MechanismRelayEffectorExecutionService(),
             new MechanismEffectorExecutionService() {
               @Override
               public boolean supports(EffectDto effect) {
@@ -54,7 +55,7 @@ class OperationServiceTest {
                 return null;
               }
             });
-    operationService = new OperationService(topologyResolver, inputValidator, sandbox, dispatchers);
+    operationService = new OperationService(frameResolver, inputValidator, sandbox, dispatchers);
   }
 
   @Test
@@ -66,8 +67,8 @@ class OperationServiceTest {
         sys.effect("OrderConfirmation", {"orderId": event["orderId"]})
         """;
 
-    OperationTopologyDto topology = topologyWithNoSchemas(mechanismAscId, ruleSource);
-    when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
+    OperationFrameDto frame = frameWithNoSchemas(mechanismAscId, ruleSource);
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
 
     OperationRequestDto request =
         new OperationRequestDto(mechanismAscId, Map.of("orderId", "ORD-001"));
@@ -113,13 +114,13 @@ class OperationServiceTest {
     EffectorAscriptionDto effector =
         new EffectorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechanismAscId, findingArchId);
 
-    OperationTopologyDto topology =
-        new OperationTopologyDto(
+    OperationFrameDto frame =
+        new OperationFrameDto(
             mechanismAscription(mechanismAscId, ruleSource),
             List.of(receptor),
             List.of(effector),
             Map.of(triggerArchId, triggerArchetype, findingArchId, findingArchetype));
-    when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
 
     UUID subjectDefId = UUID.randomUUID();
     Map<String, Object> operationInput =
@@ -154,13 +155,13 @@ class OperationServiceTest {
     ReceptorAscriptionDto receptor =
         new ReceptorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechanismAscId, triggerArchId);
 
-    OperationTopologyDto topology =
-        new OperationTopologyDto(
+    OperationFrameDto frame =
+        new OperationFrameDto(
             mechanismAscription(mechanismAscId, ruleSource),
             List.of(receptor),
             List.of(),
             Map.of(triggerArchId, triggerArchetype));
-    when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
 
     // Missing required fields — should fail validation
     Map<String, Object> badInput = Map.of("unknownField", "value");
@@ -184,8 +185,8 @@ class OperationServiceTest {
             sys.effect("OrderApproved", {"orderId": event["orderId"]})
         """;
 
-    OperationTopologyDto topology = topologyWithNoSchemas(mechanismAscId, ruleSource);
-    when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
+    OperationFrameDto frame = frameWithNoSchemas(mechanismAscId, ruleSource);
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
 
     OperationRequestDto request =
         new OperationRequestDto(mechanismAscId, Map.of("orderId", "ORD-002", "amount", 100));
@@ -200,8 +201,8 @@ class OperationServiceTest {
     UUID mechanismAscId = UUID.randomUUID();
     String ruleSource = "event = sys.receive(\"T\")\nif True\n  pass";
 
-    OperationTopologyDto topology = topologyWithNoSchemas(mechanismAscId, ruleSource);
-    when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
+    OperationFrameDto frame = frameWithNoSchemas(mechanismAscId, ruleSource);
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
 
     OperationRequestDto request = new OperationRequestDto(mechanismAscId, Map.of());
 
@@ -214,9 +215,9 @@ class OperationServiceTest {
   @Test
   void returnsFailureWhenMechanismNotFound() {
     UUID mechanismAscId = UUID.randomUUID();
-    when(topologyResolver.resolve(mechanismAscId))
+    when(frameResolver.resolve(mechanismAscId))
         .thenThrow(
-            new OperationTopologyResolutionException(
+            new OperationFrameResolutionException(
                 "Mechanism ascription not found: " + mechanismAscId));
 
     OperationRequestDto request = new OperationRequestDto(mechanismAscId, Map.of());
@@ -230,9 +231,9 @@ class OperationServiceTest {
   @Test
   void returnsFailureWhenMechanismHasNoRuleSource() {
     UUID mechanismAscId = UUID.randomUUID();
-    when(topologyResolver.resolve(mechanismAscId))
+    when(frameResolver.resolve(mechanismAscId))
         .thenThrow(
-            new OperationTopologyResolutionException("Mechanism ascription has no rule: test-id"));
+            new OperationFrameResolutionException("Mechanism ascription has no rule: test-id"));
 
     OperationRequestDto request = new OperationRequestDto(mechanismAscId, Map.of());
 
@@ -257,13 +258,13 @@ class OperationServiceTest {
     ArchetypeAscriptionDto responseArchetype =
         new ArchetypeAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, "Response", responseSchema);
 
-    OperationTopologyDto topology =
-        new OperationTopologyDto(
+    OperationFrameDto frame =
+        new OperationFrameDto(
             mechanismAscription(mechanismAscId, ruleSource),
             List.of(),
             List.of(),
             Map.of(responseArchetype.id(), responseArchetype));
-    when(topologyResolver.resolve(mechanismAscId)).thenReturn(topology);
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
 
     // Dispatcher returns a map missing the required "value" field
     MechanismEffectorExecutionService invalidResponseDispatcher =
@@ -280,7 +281,7 @@ class OperationServiceTest {
         };
     OperationService service =
         new OperationService(
-            topologyResolver, inputValidator, sandbox, List.of(invalidResponseDispatcher));
+            frameResolver, inputValidator, sandbox, List.of(invalidResponseDispatcher));
 
     OperationRequestDto request = new OperationRequestDto(mechanismAscId, Map.of());
 
@@ -290,10 +291,132 @@ class OperationServiceTest {
     assertThat(response.error()).contains("Closed-loop response validation failed");
   }
 
-  // --- Topology helpers ---
+  @Test
+  void executesRelayClosedLoopEffect() {
+    UUID mechanismAscId = UUID.randomUUID();
+    String ruleSource =
+        """
+        event = sys.receive("OrderCreated")
+        signal = sys.effect("RelaySignal", {"orderId": event["orderId"]}).by("RelayEffector").receive("RelaySignal")
+        sys.effect("OrderConfirmation", {"orderId": signal["orderId"], "relayed": True})
+        """;
 
-  private OperationTopologyDto topologyWithNoSchemas(UUID ascId, String ruleSource) {
-    return new OperationTopologyDto(
+    OperationFrameDto frame = frameWithNoSchemas(mechanismAscId, ruleSource);
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
+
+    OperationRequestDto request =
+        new OperationRequestDto(mechanismAscId, Map.of("orderId", "ORD-RELAY"));
+
+    OperationResponseDto response = operationService.operate(request);
+
+    assertThat(response.success()).isTrue();
+    assertThat(response.effects()).hasSize(2);
+    assertThat(response.effects().get(0).archetype()).isEqualTo("RelaySignal");
+    assertThat(response.effects().get(0).effectorArchetype()).isEqualTo("RelayEffector");
+    assertThat(response.effects().get(0).closedLoop()).isTrue();
+    assertThat(response.effects().get(1).archetype()).isEqualTo("OrderConfirmation");
+    assertThat(response.effects().get(1).data()).containsEntry("orderId", "ORD-RELAY");
+    assertThat(response.effects().get(1).data()).containsEntry("relayed", true);
+  }
+
+  @Test
+  void executesRelayFireAndForgetEffect() {
+    UUID mechanismAscId = UUID.randomUUID();
+    String ruleSource =
+        """
+        event = sys.receive("OrderCreated")
+        sys.effect("RelaySignal", {"orderId": event["orderId"]}).by("RelayEffector")
+        """;
+
+    OperationFrameDto frame = frameWithNoSchemas(mechanismAscId, ruleSource);
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
+
+    OperationRequestDto request =
+        new OperationRequestDto(mechanismAscId, Map.of("orderId", "ORD-FNF"));
+
+    OperationResponseDto response = operationService.operate(request);
+
+    assertThat(response.success()).isTrue();
+    assertThat(response.effects()).hasSize(1);
+    assertThat(response.effects().getFirst().archetype()).isEqualTo("RelaySignal");
+    assertThat(response.effects().getFirst().effectorArchetype()).isEqualTo("RelayEffector");
+    assertThat(response.effects().getFirst().closedLoop()).isFalse();
+    assertThat(response.effects().getFirst().data()).containsEntry("orderId", "ORD-FNF");
+  }
+
+  @Test
+  void passesValidationWhenInputMatchesOneOfMultipleReceptors() {
+    UUID mechanismAscId = UUID.randomUUID();
+    String ruleSource =
+        """
+        event = sys.receive("OrderCreated")
+        sys.effect("OrderConfirmation", {"orderId": event["orderId"]})
+        """;
+
+    // Trigger receptor — matches the input
+    JsonNode triggerSchema =
+        MAPPER
+            .createObjectNode()
+            .put("type", "object")
+            .set("required", MAPPER.createArrayNode().add("orderId"));
+    ((ObjectNode) triggerSchema)
+        .set(
+            "properties",
+            MAPPER
+                .createObjectNode()
+                .set("orderId", MAPPER.createObjectNode().put("type", "string")));
+
+    // Feedback receptor — does NOT match the input (requires different fields)
+    JsonNode feedbackSchema =
+        MAPPER
+            .createObjectNode()
+            .put("type", "object")
+            .set("required", MAPPER.createArrayNode().add("statusCode"));
+    ((ObjectNode) feedbackSchema)
+        .set(
+            "properties",
+            MAPPER
+                .createObjectNode()
+                .set("statusCode", MAPPER.createObjectNode().put("type", "integer")));
+
+    UUID triggerArchId = UUID.randomUUID();
+    UUID feedbackArchId = UUID.randomUUID();
+
+    ArchetypeAscriptionDto triggerArchetype =
+        new ArchetypeAscriptionDto(triggerArchId, "ACTIVE", 1, "OrderCreated", triggerSchema);
+    ArchetypeAscriptionDto feedbackArchetype =
+        new ArchetypeAscriptionDto(feedbackArchId, "ACTIVE", 1, "HttpResponse", feedbackSchema);
+
+    ReceptorAscriptionDto triggerReceptor =
+        new ReceptorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechanismAscId, triggerArchId);
+    ReceptorAscriptionDto feedbackReceptor =
+        new ReceptorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechanismAscId, feedbackArchId);
+
+    OperationFrameDto frame =
+        new OperationFrameDto(
+            mechanismAscription(mechanismAscId, ruleSource),
+            List.of(feedbackReceptor, triggerReceptor),
+            List.of(),
+            Map.of(triggerArchId, triggerArchetype, feedbackArchId, feedbackArchetype));
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
+
+    // Input matches trigger receptor but NOT feedback receptor
+    Map<String, Object> operationInput = Map.of("orderId", "ORD-MULTI");
+
+    OperationRequestDto request = new OperationRequestDto(mechanismAscId, operationInput);
+
+    OperationResponseDto response = operationService.operate(request);
+
+    // Must succeed — input matches at least one receptor (trigger)
+    assertThat(response.success()).isTrue();
+    assertThat(response.effects()).hasSize(1);
+    assertThat(response.effects().getFirst().archetype()).isEqualTo("OrderConfirmation");
+  }
+
+  // --- Frame helpers ---
+
+  private OperationFrameDto frameWithNoSchemas(UUID ascId, String ruleSource) {
+    return new OperationFrameDto(
         mechanismAscription(ascId, ruleSource), List.of(), List.of(), Collections.emptyMap());
   }
 

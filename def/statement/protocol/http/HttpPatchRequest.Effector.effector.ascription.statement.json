@@ -1,9 +1,0 @@
-{
-  "$schema": "gsm://archetypes/Archetype/v1",
-  "$id": "itip://frameworks/http/HttpPatchRequest/effector/v1",
-  "$ref": "itip://archetypes/UpdateEffector/v1",
-  "title": "HttpPatchRequest",
-  "description": "HTTP effector archetype \u2014 PATCH request. Extends UpdateEffector. This port requests that a set of changes described in the request entity be applied to the resource identified by the request URI. Source: RFC 5789 (PATCH Method for HTTP, 2010); RFC 9110 \u00a718.2.",
-  "type": "object",
-  "unevaluatedProperties": false
-}

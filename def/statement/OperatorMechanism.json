@@ -1,0 +1,5 @@
+{
+  "structure": "${structureId}",
+  "function": "run-operation",
+  "rule": "# SIE Operator abstract mechanism\n#\n# Declares the operator's input/output ports for wiring.\n# Client mechanisms wire an Effector to this mechanism's Receptor\n# via an Interaction to declare operability by this operator.\n#\n# Actual operation execution is handled natively by OperationService.\n\ntrigger = sys.receive(\"OperationRequest\")\nsys.effect(\"OperationResponse\", trigger)\n"
+}

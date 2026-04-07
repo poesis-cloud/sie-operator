@@ -1,0 +1,9 @@
+{
+  "$schema": "gsmarc://gsm/Archetype/v1",
+  "$ref": "gsmarc://gsm/Effector/v1",
+  "$id": "gsmarc://ops/protocols/relay/RelayEffector/v1",
+  "title": "RelayEffector",
+  "description": "Effector archetype for causal signal emission within an operation chain. Emits a RelaySignal that propagates to downstream mechanism(s) via RelayInteraction wiring. Targets are resolved at runtime from the Interaction graph — no target is declared on the port, enabling fan-out to multiple downstream mechanisms.",
+  "type": "object",
+  "unevaluatedProperties": false
+}

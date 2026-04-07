@@ -1,5 +1,6 @@
 package cloud.poesis.sie.operator.dto;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -183,6 +184,30 @@ class AscriptionDtoValidationTest {
     assertThatThrownBy(() -> StructureAscriptionDto.fromJson(VALID_UUID, "ACTIVE", 1, statement))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("purpose");
+  }
+
+  @Test
+  void structureFactoryRejectsNullStatement() {
+    assertThatThrownBy(() -> StructureAscriptionDto.fromJson(VALID_UUID, "ACTIVE", 1, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("statement");
+  }
+
+  @Test
+  void structureHappyPath() {
+    var dto = new StructureAscriptionDto(VALID_UUID, "ACTIVE", 1, "test purpose");
+    assertThat(dto.id()).isEqualTo(VALID_UUID);
+    assertThat(dto.status()).isEqualTo("ACTIVE");
+    assertThat(dto.version()).isEqualTo(1);
+    assertThat(dto.purpose()).isEqualTo("test purpose");
+  }
+
+  @Test
+  void structureFromJsonHappyPath() {
+    ObjectNode statement = MAPPER.createObjectNode().put("purpose", "my purpose");
+    var dto = StructureAscriptionDto.fromJson(VALID_UUID, "ACTIVE", 1, statement);
+    assertThat(dto.id()).isEqualTo(VALID_UUID);
+    assertThat(dto.purpose()).isEqualTo("my purpose");
   }
 
   // --- ArchetypeAscriptionDto ---

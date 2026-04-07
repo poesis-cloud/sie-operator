@@ -8,7 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import cloud.poesis.sie.operator.dto.EffectDto;
 import cloud.poesis.sie.operator.dto.OperationResponseDto;
-import cloud.poesis.sie.operator.exception.OperationTopologyResolutionException;
+import cloud.poesis.sie.operator.exception.OperationFrameResolutionException;
 import cloud.poesis.sie.operator.service.OperationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -93,9 +93,9 @@ class OperationControllerTest {
   }
 
   @Test
-  void returns422ForTopologyResolutionException() throws Exception {
+  void returns422ForFrameResolutionException() throws Exception {
     when(operationService.operate(any()))
-        .thenThrow(new OperationTopologyResolutionException("Mechanism ascription not found: abc"));
+        .thenThrow(new OperationFrameResolutionException("Mechanism ascription not found: abc"));
 
     UUID mechanismId = UUID.randomUUID();
     Map<String, Object> body =
@@ -109,7 +109,7 @@ class OperationControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body)))
         .andExpect(status().isUnprocessableEntity())
-        .andExpect(jsonPath("$.title").value("Operation topology resolution failed"))
+        .andExpect(jsonPath("$.title").value("Operation frame resolution failed"))
         .andExpect(jsonPath("$.detail").value("Mechanism ascription not found: abc"));
   }
 }

@@ -36,7 +36,7 @@ class StructureSeedRunnerTest {
 
   // Created ascription IDs
   private static final UUID OP_REQUEST_ARCH_ID = UUID.randomUUID();
-  private static final UUID OP_RESULT_ARCH_ID = UUID.randomUUID();
+  private static final UUID OP_RESPONSE_ARCH_ID = UUID.randomUUID();
   private static final UUID STRUCTURE_ASC_ID = UUID.randomUUID();
   private static final UUID MECHANISM_ASC_ID = UUID.randomUUID();
   private static final UUID RECEPTOR_ASC_ID = UUID.randomUUID();
@@ -55,15 +55,15 @@ class StructureSeedRunnerTest {
   void registersAllAscriptionsOnCleanStartup() throws Exception {
     // Resolve base archetypes
     stubBaseArchetype("Archetype", BASE_ARCHETYPE_ID);
-    stubBaseArchetype("StructureArchetype", STRUCTURE_ARCHETYPE_ID);
-    stubBaseArchetype("MechanismArchetype", MECHANISM_ARCHETYPE_ID);
-    stubBaseArchetype("ReceptorArchetype", RECEPTOR_ARCHETYPE_ID);
-    stubBaseArchetype("EffectorArchetype", EFFECTOR_ARCHETYPE_ID);
+    stubBaseArchetype("Structure", STRUCTURE_ARCHETYPE_ID);
+    stubBaseArchetype("Mechanism", MECHANISM_ARCHETYPE_ID);
+    stubBaseArchetype("Receptor", RECEPTOR_ARCHETYPE_ID);
+    stubBaseArchetype("Effector", EFFECTOR_ARCHETYPE_ID);
 
     // Nothing exists yet
     when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationRequest"))))
         .thenReturn(Optional.empty());
-    when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationResult"))))
+    when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationResponse"))))
         .thenReturn(Optional.empty());
     when(client.findAscription(eq("STRUCTURE"), eq(Map.of("purpose", "sie-operator"))))
         .thenReturn(Optional.empty());
@@ -75,7 +75,7 @@ class StructureSeedRunnerTest {
     // Creations return IDs
     when(client.createAscription(eq(BASE_ARCHETYPE_ID), any()))
         .thenReturn(ascriptionNode(OP_REQUEST_ARCH_ID))
-        .thenReturn(ascriptionNode(OP_RESULT_ARCH_ID));
+        .thenReturn(ascriptionNode(OP_RESPONSE_ARCH_ID));
     when(client.createAscription(eq(STRUCTURE_ARCHETYPE_ID), any()))
         .thenReturn(ascriptionNode(STRUCTURE_ASC_ID));
     when(client.createAscription(eq(MECHANISM_ARCHETYPE_ID), any()))
@@ -89,7 +89,7 @@ class StructureSeedRunnerTest {
 
     // Verify all six ascription types were created
     verify(client, times(2))
-        .createAscription(eq(BASE_ARCHETYPE_ID), any()); // OperationRequest + OperationResult
+        .createAscription(eq(BASE_ARCHETYPE_ID), any()); // OperationRequest + OperationResponse
     verify(client).createAscription(eq(STRUCTURE_ARCHETYPE_ID), any());
     verify(client).createAscription(eq(MECHANISM_ARCHETYPE_ID), any());
     verify(client).createAscription(eq(RECEPTOR_ARCHETYPE_ID), any());
@@ -100,16 +100,16 @@ class StructureSeedRunnerTest {
   void skipsCreationWhenAscriptionsAlreadyExist() throws Exception {
     // Resolve base archetypes
     stubBaseArchetype("Archetype", BASE_ARCHETYPE_ID);
-    stubBaseArchetype("StructureArchetype", STRUCTURE_ARCHETYPE_ID);
-    stubBaseArchetype("MechanismArchetype", MECHANISM_ARCHETYPE_ID);
-    stubBaseArchetype("ReceptorArchetype", RECEPTOR_ARCHETYPE_ID);
-    stubBaseArchetype("EffectorArchetype", EFFECTOR_ARCHETYPE_ID);
+    stubBaseArchetype("Structure", STRUCTURE_ARCHETYPE_ID);
+    stubBaseArchetype("Mechanism", MECHANISM_ARCHETYPE_ID);
+    stubBaseArchetype("Receptor", RECEPTOR_ARCHETYPE_ID);
+    stubBaseArchetype("Effector", EFFECTOR_ARCHETYPE_ID);
 
     // Everything already exists
     when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationRequest"))))
         .thenReturn(Optional.of(ascriptionNode(OP_REQUEST_ARCH_ID)));
-    when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationResult"))))
-        .thenReturn(Optional.of(ascriptionNode(OP_RESULT_ARCH_ID)));
+    when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationResponse"))))
+        .thenReturn(Optional.of(ascriptionNode(OP_RESPONSE_ARCH_ID)));
     when(client.findAscription(eq("STRUCTURE"), eq(Map.of("purpose", "sie-operator"))))
         .thenReturn(Optional.of(ascriptionNode(STRUCTURE_ASC_ID)));
     when(client.findAscription(eq("MECHANISM"), eq(Map.of("function", "run-operation"))))
@@ -139,15 +139,15 @@ class StructureSeedRunnerTest {
   @Test
   void mechanismStatementResolvesStructureReference() throws Exception {
     stubBaseArchetype("Archetype", BASE_ARCHETYPE_ID);
-    stubBaseArchetype("StructureArchetype", STRUCTURE_ARCHETYPE_ID);
-    stubBaseArchetype("MechanismArchetype", MECHANISM_ARCHETYPE_ID);
-    stubBaseArchetype("ReceptorArchetype", RECEPTOR_ARCHETYPE_ID);
-    stubBaseArchetype("EffectorArchetype", EFFECTOR_ARCHETYPE_ID);
+    stubBaseArchetype("Structure", STRUCTURE_ARCHETYPE_ID);
+    stubBaseArchetype("Mechanism", MECHANISM_ARCHETYPE_ID);
+    stubBaseArchetype("Receptor", RECEPTOR_ARCHETYPE_ID);
+    stubBaseArchetype("Effector", EFFECTOR_ARCHETYPE_ID);
 
     when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationRequest"))))
         .thenReturn(Optional.of(ascriptionNode(OP_REQUEST_ARCH_ID)));
-    when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationResult"))))
-        .thenReturn(Optional.of(ascriptionNode(OP_RESULT_ARCH_ID)));
+    when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationResponse"))))
+        .thenReturn(Optional.of(ascriptionNode(OP_RESPONSE_ARCH_ID)));
     when(client.findAscription(eq("STRUCTURE"), eq(Map.of("purpose", "sie-operator"))))
         .thenReturn(Optional.of(ascriptionNode(STRUCTURE_ASC_ID)));
     when(client.findAscription(eq("MECHANISM"), eq(Map.of("function", "run-operation"))))

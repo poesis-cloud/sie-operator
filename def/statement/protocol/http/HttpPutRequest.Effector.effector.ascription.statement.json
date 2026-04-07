@@ -1,9 +1,0 @@
-{
-  "$schema": "gsm://archetypes/Archetype/v1",
-  "$id": "itip://frameworks/http/HttpPutRequest/effector/v1",
-  "$ref": "itip://archetypes/UpdateEffector/v1",
-  "title": "HttpPutRequest",
-  "description": "HTTP effector archetype \u2014 PUT request. Extends UpdateEffector. This port requests that the state of the target resource be created or replaced with the state defined by the representation enclosed in the request message content. Design choice: mapped to UpdateEffector (primary REST semantics = replace current representation). Source: RFC 9110 \u00a79.3.4 \u2014 PUT.",
-  "type": "object",
-  "unevaluatedProperties": false
-}

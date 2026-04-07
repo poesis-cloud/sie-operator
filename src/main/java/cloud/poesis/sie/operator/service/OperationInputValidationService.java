@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Validates inputs against archetype JSON schemas resolved from the mechanism topology. Used to
+ * Validates inputs against archetype JSON schemas resolved from the mechanism frame. Used to
  * validate trigger inputs (receptor data) and effect outputs (effector data).
  */
 @Service
@@ -32,7 +32,7 @@ public class OperationInputValidationService {
   }
 
   /**
-   * Validates data against an archetype JSON Schema from the topology.
+   * Validates data against an archetype JSON Schema from the frame.
    *
    * @param archetypeName the archetype name (for error messages)
    * @param data the data to validate

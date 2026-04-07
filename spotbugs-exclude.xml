@@ -2,18 +2,24 @@
 <!--
   SpotBugs exclusion filter for sie-operator.
 
-  EI_EXPOSE_REP on Java records with Map fields:
+  EI_EXPOSE_REP / EI_EXPOSE_REP2 on Java records with Map/Module fields:
   Record accessors are compiler-generated and cannot be overridden or annotated.
   All excluded records already use defensive copies (Collections.unmodifiableMap / Map.of)
-  in their compact constructors, making the exposure safe. SpotBugs cannot verify
+  in their compact constructors, making the exposure safe. RuleSandbox's Module field
+  is intentionally shared with the Starlark thread. SpotBugs cannot verify
   runtime unmodifiability — this is a tool limitation, not a code defect.
 -->
 <FindBugsFilter>
   <Match>
     <Bug pattern="EI_EXPOSE_REP"/>
     <Or>
-      <Class name="cloud.poesis.sie.operator.starlark.EffectRecord"/>
-      <Class name="cloud.poesis.sie.operator.dto.OperationRequest"/>
+      <Class name="cloud.poesis.sie.operator.dto.EffectDto"/>
+      <Class name="cloud.poesis.sie.operator.dto.OperationRequestDto"/>
+      <Class name="cloud.poesis.sie.operator.service.OperationExecutionService$RuleSandbox"/>
     </Or>
+  </Match>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <Class name="cloud.poesis.sie.operator.service.OperationExecutionService$RuleSandbox"/>
   </Match>
 </FindBugsFilter>

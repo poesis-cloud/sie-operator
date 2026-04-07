@@ -224,7 +224,7 @@ class DefinitionManagerClientTest {
             "ascriptionDtoList": [
               {
                 "id": "01961234-5678-7000-8000-000000000050",
-                "statement": {"title": "StructureArchetype", "type": "object"},
+                "statement": {"title": "Structure", "type": "object"},
                 "version": 1,
                 "status": "ACTIVE"
               }
@@ -236,14 +236,13 @@ class DefinitionManagerClientTest {
     server.enqueue(
         new MockResponse().setBody(response).setHeader("Content-Type", "application/json"));
 
-    Optional<JsonNode> result =
-        client.findAscription("ARCHETYPE", Map.of("title", "StructureArchetype"));
+    Optional<JsonNode> result = client.findAscription("ARCHETYPE", Map.of("title", "Structure"));
 
     assertThat(result).isPresent();
     assertThat(result.get().path("id").asText()).isEqualTo(ascId.toString());
     RecordedRequest request = server.takeRequest();
     assertThat(request.getPath()).contains("type=ARCHETYPE");
-    assertThat(request.getPath()).contains("statement.title=StructureArchetype");
+    assertThat(request.getPath()).contains("statement.title=Structure");
   }
 
   @Test

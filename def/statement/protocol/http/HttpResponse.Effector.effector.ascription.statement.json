@@ -1,9 +1,0 @@
-{
-  "$schema": "gsm://archetypes/Archetype/v1",
-  "$id": "itip://frameworks/http/HttpResponse/effector/v1",
-  "$ref": "gsm://archetypes/EffectorArchetype/v1",
-  "title": "HttpResponse",
-  "description": "HTTP effector archetype \u2014 response direction. Extends EffectorArchetype. This port emits an HTTP response message. HTTP responses have no verb system; the response semantics are carried by the status code on the data layer (HTTPResponse.statusClass). The archetype title serves as the directional marker. Source: RFC 9110 \u00a715 \u2014 Status Codes.",
-  "type": "object",
-  "unevaluatedProperties": false
-}
