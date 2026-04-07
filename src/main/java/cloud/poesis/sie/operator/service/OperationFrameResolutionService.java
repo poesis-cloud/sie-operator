@@ -20,12 +20,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Resolves the full GSM operation frame for a Mechanism: fetches its ports
- * (receptors/effectors)
- * and their data archetypes from the Definition Manager. Validates that the
- * mechanism is wired to
- * the SIE Operator's run-operation mechanism via an Interaction (operability
- * check).
+ * Resolves the full GSM operation frame for a Mechanism: fetches its ports (receptors/effectors)
+ * and their data archetypes from the Definition Manager. Validates that the mechanism is wired to
+ * the SIE Operator's run-operation mechanism via an Interaction (operability check).
  */
 @Service
 public class OperationFrameResolutionService {
@@ -75,19 +72,17 @@ public class OperationFrameResolutionService {
   }
 
   /**
-   * Validates that the client mechanism is wired to the SIE Operator's
-   * run-operation mechanism. A
-   * valid wiring is an active Interaction from one of the mechanism's effectors
-   * to the operator's
-   * receptor. The operator's receptor ID is resolved on demand from the
-   * Definition Manager.
+   * Validates that the client mechanism is wired to the SIE Operator's run-operation mechanism. A
+   * valid wiring is an active Interaction from one of the mechanism's effectors to the operator's
+   * receptor. The operator's receptor ID is resolved on demand from the Definition Manager.
    */
   private void validateOperability(
       UUID mechanismAscriptionId, List<EffectorAscriptionDto> effectors) {
     UUID operatorReceptorId = resolveOperatorReceptorId();
 
     for (EffectorAscriptionDto effector : effectors) {
-      List<InteractionAscriptionDto> interactions = client.findActiveInteractionsForEffector(effector.id());
+      List<InteractionAscriptionDto> interactions =
+          client.findActiveInteractionsForEffector(effector.id());
       for (InteractionAscriptionDto interaction : interactions) {
         if (operatorReceptorId.equals(interaction.receptor())) {
           log.debug(
@@ -111,7 +106,8 @@ public class OperationFrameResolutionService {
   }
 
   private UUID resolveOperatorReceptorId() {
-    Optional<JsonNode> mechanism = client.findAscription("MECHANISM", Map.of("function", "run-operation"));
+    Optional<JsonNode> mechanism =
+        client.findAscription("MECHANISM", Map.of("function", "run-operation"));
     if (mechanism.isEmpty()) {
       throw new OperationFrameResolutionException(
           "SIE Operator mechanism (function=run-operation) not found on Definition Manager");

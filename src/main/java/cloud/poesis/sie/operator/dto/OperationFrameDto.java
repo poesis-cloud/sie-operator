@@ -7,12 +7,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Resolved operation frame: the mechanism, its ports (effectors/receptors),
- * their data archetypes,
- * and interaction wiring. Built by fetching the mechanism's constitutive parts
- * from the Definition
- * Manager. Purely composed of typed ascription DTOs; derivation methods resolve
- * cross-references
+ * Resolved operation frame: the mechanism, its ports (effectors/receptors), their data archetypes,
+ * and interaction wiring. Built by fetching the mechanism's constitutive parts from the Definition
+ * Manager. Purely composed of typed ascription DTOs; derivation methods resolve cross-references
  * (e.g. archetype name/schema lookups) by joining through the archetypes map.
  */
 public record OperationFrameDto(
@@ -27,10 +24,7 @@ public record OperationFrameDto(
     archetypes = archetypes != null ? Map.copyOf(archetypes) : Map.of();
   }
 
-  /**
-   * Returns the archetype ascription for the given archetype ascription ID, or
-   * empty.
-   */
+  /** Returns the archetype ascription for the given archetype ascription ID, or empty. */
   public Optional<ArchetypeAscriptionDto> findArchetype(UUID archetypeAscriptionId) {
     return Optional.ofNullable(archetypes.get(archetypeAscriptionId));
   }
@@ -57,9 +51,7 @@ public record OperationFrameDto(
         .findFirst();
   }
 
-  /**
-   * Returns the JSON Schema for the named archetype, or empty if not resolved.
-   */
+  /** Returns the JSON Schema for the named archetype, or empty if not resolved. */
   public Optional<JsonNode> findSchema(String archetypeName) {
     return archetypes.values().stream()
         .filter(a -> archetypeName.equals(a.title()))

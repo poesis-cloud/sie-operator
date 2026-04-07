@@ -1,9 +1,9 @@
 {
-  "$schema": "gsmarc://gsm/Archetype/v1",
-  "$ref": "gsmarc://gsm/Interaction/v1",
-  "$id": "gsmarc://ops/protocols/relay/RelayInteraction/v1",
-  "title": "RelayInteraction",
-  "description": "Types a causal link (Effector → Receptor) through which a RelaySignal propagates from one mechanism to the next within an operation chain. Stays in-memory — no network boundary is crossed. The Interaction graph determines causal ordering and enables fan-out (one effector wired to multiple receptors).",
-  "type": "object",
-  "unevaluatedProperties": false
+    "$schema": "gsmarc://gsm/Archetype/v1",
+    "$ref": "gsmarc://gsm/Interaction/v1",
+    "$id": "gsmarc://ops/protocols/relay/RelayInteraction/v1",
+    "title": "RelayInteraction",
+    "description": "Types a causal link (Effector → Receptor) through which a RelaySignal propagates from one mechanism to the next within an operation chain. Stays in-memory — no network boundary is crossed. The Interaction graph determines causal ordering and enables fan-out (one effector wired to multiple receptors).",
+    "type": "object",
+    "unevaluatedProperties": false
 }
