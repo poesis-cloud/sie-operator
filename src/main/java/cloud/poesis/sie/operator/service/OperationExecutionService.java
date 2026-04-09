@@ -4,6 +4,7 @@ import cloud.poesis.sie.operator.dto.EffectDto;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.starlark.java.eval.EvalException;
@@ -37,8 +38,24 @@ public class OperationExecutionService {
       String ruleSource,
       Map<String, Object> operationInput,
       Function<EffectDto, Object> effectHandler) {
+    return execute(mechanismId, ruleSource, operationInput, effectHandler, Set.of(), Set.of());
+  }
 
-    RuleSandbox sandbox = sandboxFactory.create(mechanismId, operationInput, effectHandler);
+  public ExecutionResult execute(
+      String mechanismId,
+      String ruleSource,
+      Map<String, Object> operationInput,
+      Function<EffectDto, Object> effectHandler,
+      Set<String> validReceptorArchetypes,
+      Set<String> validEffectorArchetypes) {
+
+    RuleSandbox sandbox =
+        sandboxFactory.create(
+            mechanismId,
+            operationInput,
+            effectHandler,
+            validReceptorArchetypes,
+            validEffectorArchetypes);
 
     try (Mutability mu = Mutability.create("rule")) {
       StarlarkThread thread = new StarlarkThread(mu, StarlarkSemantics.DEFAULT);
@@ -89,7 +106,9 @@ public class OperationExecutionService {
     RuleSandbox create(
         String mechanismId,
         Map<String, Object> operationInput,
-        Function<EffectDto, Object> effectHandler);
+        Function<EffectDto, Object> effectHandler,
+        Set<String> validReceptorArchetypes,
+        Set<String> validEffectorArchetypes);
   }
 
   public record RuleSandbox(Module module, Supplier<List<EffectDto>> complete) {}

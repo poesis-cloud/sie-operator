@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -69,7 +71,9 @@ public class OperationService {
             mechanismId,
             ruleSource,
             request.operationInput(),
-            effect -> dispatchAndValidateReception(effect, frame));
+            effect -> dispatchAndValidateReception(effect, frame),
+            resolveReceptorArchetypeNames(frame),
+            resolveEffectorArchetypeNames(frame));
 
     if (!result.success()) {
       log.warn("Mechanism {} execution failed: {}", mechanismId, result.error());
@@ -106,13 +110,15 @@ public class OperationService {
   }
 
   private Object dispatchAndValidateReception(EffectDto effect, OperationFrameDto frame) {
+    validateEffectData(effect, frame);
+
     for (MechanismEffectorExecutionService dispatcher : dispatchers) {
       if (dispatcher.supports(effect)) {
         log.debug(
             "Dispatching effect archetype={} via {}",
             effect.archetype(),
             dispatcher.getClass().getSimpleName());
-        Map<String, Object> reception = dispatcher.dispatch(effect);
+        Map<String, Object> reception = dispatcher.dispatch(effect, frame);
         if (effect.closedLoop() && reception != null) {
           validateReception(effect.feedbackArchetype(), reception, frame);
         }
@@ -137,5 +143,37 @@ public class OperationService {
                 + result.errors());
       }
     }
+  }
+
+  private void validateEffectData(EffectDto effect, OperationFrameDto frame) {
+    String archetype = effect.archetype();
+    if (archetype == null) {
+      return;
+    }
+    Optional<JsonNode> schema = frame.findSchema(archetype);
+    if (schema.isPresent()) {
+      OperationInputValidationService.ValidationResult result =
+          inputValidator.validate(archetype, effect.data(), schema.get());
+      if (!result.isValid()) {
+        throw new IllegalStateException(
+            "Effect data validation failed against '" + archetype + "': " + result.errors());
+      }
+    }
+  }
+
+  private Set<String> resolveReceptorArchetypeNames(OperationFrameDto frame) {
+    return frame.receptors().stream()
+        .map(r -> frame.findArchetype(r.archetype()))
+        .flatMap(Optional::stream)
+        .map(ArchetypeAscriptionDto::title)
+        .collect(Collectors.toUnmodifiableSet());
+  }
+
+  private Set<String> resolveEffectorArchetypeNames(OperationFrameDto frame) {
+    return frame.effectors().stream()
+        .map(e -> frame.findArchetype(e.archetype()))
+        .flatMap(Optional::stream)
+        .map(ArchetypeAscriptionDto::title)
+        .collect(Collectors.toUnmodifiableSet());
   }
 }

@@ -7,6 +7,7 @@ import cloud.poesis.sie.operator.dto.EffectDto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import net.starlark.java.eval.Dict;
 import net.starlark.java.eval.EvalException;
 import net.starlark.java.eval.Starlark;
@@ -160,20 +161,24 @@ class OperationSandboxConfigTest {
 
   @Test
   void sysModuleIdReturnsMechanismId() {
-    var sys = new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null);
+    var sys =
+        new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null, Set.of(), Set.of());
     assertThat(sys.id()).isEqualTo("mech-1");
   }
 
   @Test
   void sysModuleReceiveReturnsReception() throws EvalException {
-    var sys = new OperationSandboxConfig.SysModule("mech-1", Map.of("k", "v"), dto -> null);
+    var sys =
+        new OperationSandboxConfig.SysModule(
+            "mech-1", Map.of("k", "v"), dto -> null, Set.of(), Set.of());
     var reception = sys.receive("EventArch");
     assertThat(reception).isNotNull();
   }
 
   @Test
   void sysModuleReceiveCalledTwiceThrows() throws EvalException {
-    var sys = new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null);
+    var sys =
+        new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null, Set.of(), Set.of());
     sys.receive("First");
     assertThatThrownBy(() -> sys.receive("Second"))
         .isInstanceOf(EvalException.class)
@@ -182,7 +187,8 @@ class OperationSandboxConfigTest {
 
   @Test
   void sysModuleEffectBeforeReceiveThrows() {
-    var sys = new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null);
+    var sys =
+        new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null, Set.of(), Set.of());
     assertThatThrownBy(() -> sys.effect("Arch", Starlark.NONE))
         .isInstanceOf(EvalException.class)
         .hasMessageContaining("sys.receive()");
@@ -190,7 +196,8 @@ class OperationSandboxConfigTest {
 
   @Test
   void sysModuleEffectAfterReceiveSucceeds() throws EvalException {
-    var sys = new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null);
+    var sys =
+        new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null, Set.of(), Set.of());
     sys.receive("Event");
     var effect = sys.effect("Output", Starlark.NONE);
     assertThat(effect).isNotNull();
@@ -198,7 +205,7 @@ class OperationSandboxConfigTest {
 
   @Test
   void sysModuleNullOperationInputTreatedAsEmpty() throws EvalException {
-    var sys = new OperationSandboxConfig.SysModule("mech-1", null, dto -> null);
+    var sys = new OperationSandboxConfig.SysModule("mech-1", null, dto -> null, Set.of(), Set.of());
     var reception = sys.receive("Event");
     assertThat(reception).isNotNull();
   }
@@ -213,7 +220,9 @@ class OperationSandboxConfigTest {
             dto -> {
               dispatched.add(dto);
               return null;
-            });
+            },
+            Set.of(),
+            Set.of());
     sys.receive("Event");
     sys.effect("Output", Starlark.NONE);
     sys.flushPendingEffects();
@@ -225,7 +234,8 @@ class OperationSandboxConfigTest {
 
   @Test
   void sysModuleEffectWithDictExercisesToJavaBranches() throws EvalException {
-    var sys = new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null);
+    var sys =
+        new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null, Set.of(), Set.of());
     sys.receive("Event");
 
     Dict<String, Object> dict =
@@ -252,7 +262,8 @@ class OperationSandboxConfigTest {
 
   @Test
   void sysModuleToJavaHandlesNestedDictAndList() throws EvalException {
-    var sys = new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null);
+    var sys =
+        new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null, Set.of(), Set.of());
     sys.receive("Event");
 
     Dict<String, Object> nested = Dict.immutableCopyOf(Map.of("inner", StarlarkInt.of(99)));
@@ -269,7 +280,8 @@ class OperationSandboxConfigTest {
 
   @Test
   void sysModuleToJavaHandlesNoneAndFallback() throws EvalException {
-    var sys = new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null);
+    var sys =
+        new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null, Set.of(), Set.of());
     sys.receive("Event");
 
     StarlarkValue custom =
@@ -297,7 +309,8 @@ class OperationSandboxConfigTest {
 
   @Test
   void sysModuleConvertDictWithNullReturnsEmptyMap() throws EvalException {
-    var sys = new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null);
+    var sys =
+        new OperationSandboxConfig.SysModule("mech-1", Map.of(), dto -> null, Set.of(), Set.of());
     sys.receive("Event");
     sys.effect("Output", Starlark.NONE);
     sys.flushPendingEffects();
@@ -307,7 +320,8 @@ class OperationSandboxConfigTest {
 
   @Test
   void sysModuleReprIncludesMechanismId() {
-    var sys = new OperationSandboxConfig.SysModule("mech-42", Map.of(), dto -> null);
+    var sys =
+        new OperationSandboxConfig.SysModule("mech-42", Map.of(), dto -> null, Set.of(), Set.of());
     var printer = new net.starlark.java.eval.Printer();
     sys.repr(printer);
     assertThat(printer.toString()).contains("mech-42");
@@ -504,7 +518,9 @@ class OperationSandboxConfigTest {
 
   @Test
   void createSandboxReturnsFunctionalSandbox() {
-    var sandbox = OperationSandboxConfig.createSandbox("mech-1", Map.of("key", "val"), dto -> null);
+    var sandbox =
+        OperationSandboxConfig.createSandbox(
+            "mech-1", Map.of("key", "val"), dto -> null, Set.of(), Set.of());
     assertThat(sandbox.module()).isNotNull();
     assertThat(sandbox.complete()).isNotNull();
   }

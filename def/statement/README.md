@@ -6,12 +6,12 @@ GSM statement definitions for the SIE Operator's identity and protocol archetype
 
 The Operator registers itself on the Definition Manager at startup using these statements:
 
-| File                     | GSM Type  | Purpose                                                       |
-| ------------------------ | --------- | ------------------------------------------------------------- |
-| `OperatorStructure.json` | Structure | Declares the operator's existence (`purpose: "sie-operator"`) |
-| `OperatorMechanism.json` | Mechanism | Declares the `run-operation` function and its abstract rule   |
-| `OperationRequest.json`  | Archetype | Receptor data contract — shape of an operation trigger        |
-| `OperationResponse.json` | Archetype | Effector data contract — shape of an operation result         |
+| File                            | GSM Type  | Purpose                                                       |
+| ------------------------------- | --------- | ------------------------------------------------------------- |
+| `OperatorStructure.json`        | Structure | Declares the operator's existence (`purpose: "sie-operator"`) |
+| `OperatorMechanism.json`        | Mechanism | Declares the `run-operation` function and its abstract rule   |
+| `OperationRequest.schema.json`  | Archetype | Receptor data contract — shape of an operation trigger        |
+| `OperationResponse.schema.json` | Archetype | Effector data contract — shape of an operation result         |
 
 Client mechanisms declare **operability** by wiring an Effector → Interaction → the Operator's Receptor (typed by `OperationRequest`).
 

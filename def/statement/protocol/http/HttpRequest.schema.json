@@ -8,6 +8,16 @@
     "method",
     "targetUri"
   ],
+  "if": {
+    "properties": {
+      "method": {
+        "enum": ["POST", "PUT", "PATCH"]
+      }
+    }
+  },
+  "then": {
+    "required": ["body", "contentType"]
+  },
   "properties": {
     "method": {
       "type": "string",

@@ -1,10 +1,13 @@
 package cloud.poesis.sie.operator.service;
 
 import cloud.poesis.sie.operator.dto.EffectDto;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -19,14 +22,25 @@ public class MechanismHttpEffectorExecutionService implements MechanismEffectorE
   private static final Logger log =
       LoggerFactory.getLogger(MechanismHttpEffectorExecutionService.class);
 
-  private final WebClient webClient;
+  private static final Set<String> HTTP_EFFECTOR_ARCHETYPES = Set.of("HttpRequestEffector");
 
-  public MechanismHttpEffectorExecutionService(WebClient.Builder webClientBuilder) {
+  private final WebClient webClient;
+  private final Duration timeout;
+
+  public MechanismHttpEffectorExecutionService(
+      WebClient.Builder webClientBuilder,
+      @Value("${op.http.timeout-seconds:30}") int timeoutSeconds) {
     this.webClient = webClientBuilder.build();
+    this.timeout = Duration.ofSeconds(timeoutSeconds);
   }
 
   @Override
   public boolean supports(EffectDto effect) {
+    String effectorArchetype = effect.effectorArchetype();
+    if (effectorArchetype != null) {
+      return HTTP_EFFECTOR_ARCHETYPES.contains(effectorArchetype);
+    }
+    // Legacy duck-typing fallback for effects without effectorArchetype
     Map<String, Object> data = effect.data();
     return data.containsKey("targetUri") && data.containsKey("method");
   }
@@ -62,6 +76,7 @@ public class MechanismHttpEffectorExecutionService implements MechanismEffectorE
                   .defaultIfEmpty("")
                   .map(body -> toReception(response, body));
             })
+        .timeout(timeout)
         .block();
   }
 

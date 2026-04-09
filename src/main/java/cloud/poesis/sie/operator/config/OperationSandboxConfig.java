@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -52,9 +53,17 @@ public class OperationSandboxConfig {
   public static OperationExecutionService.RuleSandbox createSandbox(
       String mechanismId,
       Map<String, Object> operationInput,
-      Function<EffectDto, Object> effectHandler) {
+      Function<EffectDto, Object> effectHandler,
+      Set<String> validReceptorArchetypes,
+      Set<String> validEffectorArchetypes) {
 
-    SysModule sys = new SysModule(mechanismId, operationInput, effectHandler);
+    SysModule sys =
+        new SysModule(
+            mechanismId,
+            operationInput,
+            effectHandler,
+            validReceptorArchetypes,
+            validEffectorArchetypes);
     HostFunctions hostFunctions = new HostFunctions();
 
     ImmutableMap.Builder<String, Object> predeclared = ImmutableMap.builder();
@@ -188,16 +197,24 @@ public class OperationSandboxConfig {
     private final String mechanismId;
     private final Map<String, Object> operationInput;
     private final Function<EffectDto, Object> effectHandler;
+    private final Set<String> validReceptorArchetypes;
+    private final Set<String> validEffectorArchetypes;
     private final List<Effect> pendingEffects = new ArrayList<>();
     private boolean receiveCalled;
 
     SysModule(
         String mechanismId,
         Map<String, Object> operationInput,
-        Function<EffectDto, Object> effectHandler) {
+        Function<EffectDto, Object> effectHandler,
+        Set<String> validReceptorArchetypes,
+        Set<String> validEffectorArchetypes) {
       this.mechanismId = mechanismId;
       this.operationInput = operationInput != null ? operationInput : Collections.emptyMap();
       this.effectHandler = effectHandler;
+      this.validReceptorArchetypes =
+          validReceptorArchetypes != null ? validReceptorArchetypes : Set.of();
+      this.validEffectorArchetypes =
+          validEffectorArchetypes != null ? validEffectorArchetypes : Set.of();
     }
 
     @StarlarkMethod(name = "id", doc = "The Mechanism's id (UUIDv7).", structField = true)
@@ -212,6 +229,10 @@ public class OperationSandboxConfig {
     public Reception receive(String eventArchetype) throws EvalException {
       if (receiveCalled) {
         throw Starlark.errorf("sys.receive() must be called exactly once");
+      }
+      if (!validReceptorArchetypes.isEmpty() && !validReceptorArchetypes.contains(eventArchetype)) {
+        throw Starlark.errorf(
+            "Unknown receptor archetype '%s'. Valid: %s", eventArchetype, validReceptorArchetypes);
       }
       receiveCalled = true;
       return new Reception(toStarlarkDict(operationInput));
@@ -231,6 +252,10 @@ public class OperationSandboxConfig {
     public Effect effect(String archetype, Object data) throws EvalException {
       if (!receiveCalled) {
         throw Starlark.errorf("sys.receive() must be called before sys.effect()");
+      }
+      if (!validEffectorArchetypes.isEmpty() && !validEffectorArchetypes.contains(archetype)) {
+        throw Starlark.errorf(
+            "Unknown effector data archetype '%s'. Valid: %s", archetype, validEffectorArchetypes);
       }
       Map<String, Object> dataMap = convertDict(data);
       Effect effect = new Effect(archetype, dataMap, effectHandler);

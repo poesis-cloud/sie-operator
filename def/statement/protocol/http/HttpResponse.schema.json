@@ -7,6 +7,26 @@
   "required": [
     "statusCode"
   ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "statusCode": {
+            "not": {
+              "anyOf": [
+                { "minimum": 100, "maximum": 199 },
+                { "const": 204 },
+                { "const": 304 }
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["body", "contentType"]
+      }
+    }
+  ],
   "properties": {
     "statusCode": {
       "type": "integer",

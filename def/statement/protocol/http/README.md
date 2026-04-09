@@ -6,16 +6,16 @@ Crosses the network boundary — analogous to a **syscall** or **FFI call**. The
 
 ## Archetype Quad
 
-| File                           | Role        | Description                                                             |
-| ------------------------------ | ----------- | ----------------------------------------------------------------------- |
-| `HttpRequest.json`             | Data        | Request payload: `method`, `targetUri`, `contentType`, `accept`, `body` |
-| `HttpResponse.json`            | Data        | Response payload: `statusCode`, `contentType`, `body`                   |
-| `HttpRequestEffector.json`     | Effector    | Port archetype — identity-bound by `method` + `targetUri`               |
-| `HttpRequestReceptor.json`     | Receptor    | Port archetype — identity-bound by `targetUri`                          |
-| `HttpRequestInteraction.json`  | Interaction | Causal link: request Effector → request Receptor                        |
-| `HttpResponseEffector.json`    | Effector    | Port archetype — response emission                                      |
-| `HttpResponseReceptor.json`    | Receptor    | Port archetype — response reception                                     |
-| `HttpResponseInteraction.json` | Interaction | Causal link: response Effector → response Receptor                      |
+| File                                  | Role        | Description                                                             |
+| ------------------------------------- | ----------- | ----------------------------------------------------------------------- |
+| `HttpRequest.schema.json`             | Data        | Request payload: `method`, `targetUri`, `contentType`, `accept`, `body` |
+| `HttpResponse.schema.json`            | Data        | Response payload: `statusCode`, `contentType`, `body`                   |
+| `HttpRequestEffector.schema.json`     | Effector    | Port archetype — identity-bound by `method` + `targetUri`               |
+| `HttpRequestReceptor.schema.json`     | Receptor    | Port archetype — identity-bound by `targetUri`                          |
+| `HttpRequestInteraction.schema.json`  | Interaction | Causal link: request Effector → request Receptor                        |
+| `HttpResponseEffector.schema.json`    | Effector    | Port archetype — response emission                                      |
+| `HttpResponseReceptor.schema.json`    | Receptor    | Port archetype — response reception                                     |
+| `HttpResponseInteraction.schema.json` | Interaction | Causal link: response Effector → response Receptor                      |
 
 ## Two Directions
 

@@ -3,6 +3,7 @@ package cloud.poesis.sie.operator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import cloud.poesis.sie.operator.client.DefinitionManagerClient;
 import cloud.poesis.sie.operator.config.OperationSandboxConfig;
 import cloud.poesis.sie.operator.dto.ArchetypeAscriptionDto;
 import cloud.poesis.sie.operator.dto.EffectDto;
@@ -32,6 +33,7 @@ class OperationServiceTest {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   @Mock private OperationFrameResolutionService frameResolver;
+  @Mock private DefinitionManagerClient definitionManagerClient;
 
   private OperationInputValidationService inputValidator;
   private OperationExecutionService sandbox;
@@ -43,7 +45,7 @@ class OperationServiceTest {
     sandbox = new OperationExecutionService(OperationSandboxConfig::createSandbox);
     List<MechanismEffectorExecutionService> dispatchers =
         List.of(
-            new MechanismRelayEffectorExecutionService(),
+            new MechanismRelayEffectorExecutionService(definitionManagerClient, null),
             new MechanismEffectorExecutionService() {
               @Override
               public boolean supports(EffectDto effect) {
@@ -139,6 +141,88 @@ class OperationServiceTest {
     assertThat(response.effects()).hasSize(1);
     assertThat(response.effects().getFirst().archetype()).isEqualTo("AppraisalFinding");
     assertThat(response.effects().getFirst().data()).containsEntry("findingType", "GAP");
+  }
+
+  @Test
+  void failsWhenRuleUsesUnknownReceptorArchetype() {
+    UUID mechanismAscId = UUID.randomUUID();
+    String ruleSource =
+        """
+        event = sys.receive("NonExistentArchetype")
+        sys.effect("SomeOutput", {"message": "test"})
+        """;
+
+    // Permissive schema so input validation passes — the sandbox archetype check is what we test
+    JsonNode permissiveSchema = MAPPER.createObjectNode().put("type", "object");
+    UUID receptorArchId = UUID.randomUUID();
+    ArchetypeAscriptionDto receptorArchetype =
+        new ArchetypeAscriptionDto(
+            receptorArchId, "ACTIVE", 1, "AppraisalTrigger", permissiveSchema);
+    ReceptorAscriptionDto receptor =
+        new ReceptorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechanismAscId, receptorArchId);
+
+    OperationFrameDto frame =
+        new OperationFrameDto(
+            mechanismAscription(mechanismAscId, ruleSource),
+            List.of(receptor),
+            List.of(),
+            Map.of(receptorArchId, receptorArchetype));
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
+
+    OperationRequestDto request = new OperationRequestDto(mechanismAscId, Map.of());
+
+    OperationResponseDto response = operationService.operate(request);
+
+    assertThat(response.success()).isFalse();
+    assertThat(response.error()).contains("Unknown receptor archetype");
+  }
+
+  @Test
+  void failsWhenRuleUsesUnknownEffectorArchetype() {
+    UUID mechanismAscId = UUID.randomUUID();
+    String ruleSource =
+        """
+        event = sys.receive("AppraisalTrigger")
+        sys.effect("NonExistentOutput", {"message": "test"})
+        """;
+
+    JsonNode triggerSchema = triggerArchetypeSchema();
+    UUID triggerArchId = UUID.randomUUID();
+    UUID findingArchId = UUID.randomUUID();
+    ArchetypeAscriptionDto triggerArchetype =
+        new ArchetypeAscriptionDto(triggerArchId, "ACTIVE", 1, "AppraisalTrigger", triggerSchema);
+    ArchetypeAscriptionDto findingArchetype =
+        new ArchetypeAscriptionDto(
+            findingArchId, "ACTIVE", 1, "AppraisalFinding", findingArchetypeSchema());
+    ReceptorAscriptionDto receptor =
+        new ReceptorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechanismAscId, triggerArchId);
+    EffectorAscriptionDto effector =
+        new EffectorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechanismAscId, findingArchId);
+
+    OperationFrameDto frame =
+        new OperationFrameDto(
+            mechanismAscription(mechanismAscId, ruleSource),
+            List.of(receptor),
+            List.of(effector),
+            Map.of(triggerArchId, triggerArchetype, findingArchId, findingArchetype));
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
+
+    Map<String, Object> operationInput =
+        Map.of(
+            "ruleType",
+            "test",
+            "subjectType",
+            "DIRECTIVE",
+            "subjectDefinitionId",
+            UUID.randomUUID().toString(),
+            "subject",
+            Map.of("key", "val"));
+    OperationRequestDto request = new OperationRequestDto(mechanismAscId, operationInput);
+
+    OperationResponseDto response = operationService.operate(request);
+
+    assertThat(response.success()).isFalse();
+    assertThat(response.error()).contains("Unknown effector data archetype");
   }
 
   @Test
@@ -289,6 +373,45 @@ class OperationServiceTest {
 
     assertThat(response.success()).isFalse();
     assertThat(response.error()).contains("Closed-loop response validation failed");
+  }
+
+  @Test
+  void failsWhenEffectDataFailsSchemaValidation() {
+    UUID mechanismAscId = UUID.randomUUID();
+    String ruleSource =
+        """
+        event = sys.receive("Trigger")
+        sys.effect("StrictOutput", {"wrongField": "value"})
+        """;
+
+    ObjectNode outputSchema = MAPPER.createObjectNode();
+    outputSchema.put("type", "object");
+    outputSchema.set("required", MAPPER.createArrayNode().add("requiredField"));
+    ObjectNode props = MAPPER.createObjectNode();
+    props.set("requiredField", MAPPER.createObjectNode().put("type", "string"));
+    outputSchema.set("properties", props);
+
+    UUID outputArchId = UUID.randomUUID();
+    ArchetypeAscriptionDto outputArchetype =
+        new ArchetypeAscriptionDto(outputArchId, "ACTIVE", 1, "StrictOutput", outputSchema);
+
+    EffectorAscriptionDto effector =
+        new EffectorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechanismAscId, outputArchId);
+
+    OperationFrameDto frame =
+        new OperationFrameDto(
+            mechanismAscription(mechanismAscId, ruleSource),
+            List.of(),
+            List.of(effector),
+            Map.of(outputArchId, outputArchetype));
+    when(frameResolver.resolve(mechanismAscId)).thenReturn(frame);
+
+    OperationRequestDto request = new OperationRequestDto(mechanismAscId, Map.of());
+
+    OperationResponseDto response = operationService.operate(request);
+
+    assertThat(response.success()).isFalse();
+    assertThat(response.error()).contains("Effect data validation failed");
   }
 
   @Test

@@ -40,6 +40,10 @@ public class DefinitionManagerClient {
     return getAscription(ascriptionId, ArchetypeAscriptionDto.class);
   }
 
+  public ReceptorAscriptionDto getReceptorAscription(UUID ascriptionId) {
+    return getAscription(ascriptionId, ReceptorAscriptionDto.class);
+  }
+
   public List<EffectorAscriptionDto> findEffectors(UUID mechanismAscriptionId) {
     return findPorts("EFFECTOR", mechanismAscriptionId, EffectorAscriptionDto.class);
   }

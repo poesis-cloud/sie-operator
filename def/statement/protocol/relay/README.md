@@ -4,12 +4,12 @@ The Operator's **native causal propagation** protocol. Relay carries causal sign
 
 ## Archetype Quad
 
-| File                    | Role        | Description                                                                             |
-| ----------------------- | ----------- | --------------------------------------------------------------------------------------- |
-| `RelaySignal.json`      | Data        | Causal signal: unconstrained `body` (extending archetypes constrain via `$ref`/`allOf`) |
-| `RelayEffector.json`    | Effector    | Port archetype — no addressing properties; targets resolved from Interaction graph      |
-| `RelayReceptor.json`    | Receptor    | Port archetype — no addressing properties; sources resolved from Interaction graph      |
-| `RelayInteraction.json` | Interaction | Causal link: in-memory propagation from upstream to downstream mechanism                |
+| File                           | Role        | Description                                                                             |
+| ------------------------------ | ----------- | --------------------------------------------------------------------------------------- |
+| `RelaySignal.schema.json`      | Data        | Causal signal: unconstrained `body` (extending archetypes constrain via `$ref`/`allOf`) |
+| `RelayEffector.schema.json`    | Effector    | Port archetype — no addressing properties; targets resolved from Interaction graph      |
+| `RelayReceptor.schema.json`    | Receptor    | Port archetype — no addressing properties; sources resolved from Interaction graph      |
+| `RelayInteraction.schema.json` | Interaction | Causal link: in-memory propagation from upstream to downstream mechanism                |
 
 ## Design
 

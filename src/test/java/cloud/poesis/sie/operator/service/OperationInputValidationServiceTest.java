@@ -133,7 +133,7 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpRequestSchemaAcceptsGetWithOnlyMethodAndTargetUri() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.schema.json");
 
     Map<String, Object> getRequest = Map.of("method", "GET", "targetUri", "/api/items");
 
@@ -147,7 +147,7 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpRequestSchemaAcceptsPostWithBody() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.schema.json");
 
     Map<String, Object> postRequest =
         Map.of(
@@ -166,7 +166,7 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpRequestSchemaRejectsWithoutMethod() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.schema.json");
 
     Map<String, Object> noMethod = Map.of("targetUri", "/api/items");
 
@@ -179,7 +179,7 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpResponseSchemaAcceptsNoContentWithOnlyStatusCode() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.schema.json");
 
     Map<String, Object> noContent = Map.of("statusCode", 204);
 
@@ -193,7 +193,7 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpResponseSchemaAcceptsFullResponse() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.schema.json");
 
     Map<String, Object> fullResponse =
         Map.of("statusCode", 200, "contentType", "application/json", "body", "{\"ok\":true}");
@@ -208,7 +208,7 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpResponseSchemaRejectsWithoutStatusCode() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.schema.json");
 
     Map<String, Object> noStatus = Map.of("body", "some body");
 

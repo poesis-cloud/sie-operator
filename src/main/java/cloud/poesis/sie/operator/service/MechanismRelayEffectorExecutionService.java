@@ -1,9 +1,19 @@
 package cloud.poesis.sie.operator.service;
 
+import cloud.poesis.sie.operator.client.DefinitionManagerClient;
 import cloud.poesis.sie.operator.dto.EffectDto;
+import cloud.poesis.sie.operator.dto.EffectorAscriptionDto;
+import cloud.poesis.sie.operator.dto.InteractionAscriptionDto;
+import cloud.poesis.sie.operator.dto.OperationFrameDto;
+import cloud.poesis.sie.operator.dto.OperationRequestDto;
+import cloud.poesis.sie.operator.dto.OperationResponseDto;
+import cloud.poesis.sie.operator.dto.ReceptorAscriptionDto;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -11,7 +21,10 @@ import org.springframework.stereotype.Component;
 /**
  * Native causal propagation dispatcher — the Operator's fallback protocol. Accepts any effect that
  * declares an effectorArchetype but is not claimed by a network-boundary dispatcher (HTTP, Kafka).
- * Propagates the causal signal in-memory by returning the effect's data as-is.
+ *
+ * <p>When an Interaction graph wires the effector to a downstream mechanism, resolves and invokes
+ * the downstream mechanism (operation chain). Otherwise, propagates the causal signal in-memory by
+ * returning the effect's data as-is.
  */
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE)
@@ -19,6 +32,15 @@ public class MechanismRelayEffectorExecutionService implements MechanismEffector
 
   private static final Logger log =
       LoggerFactory.getLogger(MechanismRelayEffectorExecutionService.class);
+
+  private final DefinitionManagerClient client;
+  private final OperationService operationService;
+
+  public MechanismRelayEffectorExecutionService(
+      DefinitionManagerClient client, @Lazy OperationService operationService) {
+    this.client = client;
+    this.operationService = operationService;
+  }
 
   @Override
   public boolean supports(EffectDto effect) {
@@ -33,5 +55,48 @@ public class MechanismRelayEffectorExecutionService implements MechanismEffector
         effect.archetype(),
         effect.effectorArchetype());
     return effect.data();
+  }
+
+  @Override
+  public Map<String, Object> dispatch(EffectDto effect, OperationFrameDto frame) {
+    String effectorArchetype = effect.effectorArchetype();
+    if (effectorArchetype == null || frame == null) {
+      return dispatch(effect);
+    }
+
+    Optional<EffectorAscriptionDto> effector = frame.findEffectorByArchetypeName(effectorArchetype);
+    if (effector.isEmpty()) {
+      log.debug("No effector in frame for archetype {} — passthrough", effectorArchetype);
+      return dispatch(effect);
+    }
+
+    List<InteractionAscriptionDto> interactions =
+        client.findActiveInteractionsForEffector(effector.get().id());
+    if (interactions.isEmpty()) {
+      log.debug("No interactions for effector {} — passthrough", effector.get().id());
+      return dispatch(effect);
+    }
+
+    InteractionAscriptionDto interaction = interactions.getFirst();
+    ReceptorAscriptionDto downstream = client.getReceptorAscription(interaction.receptor());
+
+    log.debug(
+        "Relay chain: effector {} → interaction {} → downstream mechanism {}",
+        effector.get().id(),
+        interaction.id(),
+        downstream.mechanism());
+
+    OperationResponseDto response =
+        operationService.operate(new OperationRequestDto(downstream.mechanism(), effect.data()));
+
+    if (!response.success()) {
+      throw new IllegalStateException(
+          "Downstream mechanism " + downstream.mechanism() + " failed: " + response.error());
+    }
+
+    if (response.effects().isEmpty()) {
+      return Map.of();
+    }
+    return response.effects().getFirst().data();
   }
 }

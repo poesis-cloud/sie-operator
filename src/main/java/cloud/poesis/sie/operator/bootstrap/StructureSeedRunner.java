@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +33,27 @@ public class StructureSeedRunner implements ApplicationRunner {
   private static final String STATEMENT_DIR =
       "statement/"; // mapped from def/statement/ via pom.xml
 
+  private static final List<ProtocolArchetype> PROTOCOL_ARCHETYPES =
+      List.of(
+          new ProtocolArchetype("HttpRequest", "protocol/http/HttpRequest.schema.json"),
+          new ProtocolArchetype("HttpResponse", "protocol/http/HttpResponse.schema.json"),
+          new ProtocolArchetype(
+              "HttpRequestEffector", "protocol/http/HttpRequestEffector.schema.json"),
+          new ProtocolArchetype(
+              "HttpResponseEffector", "protocol/http/HttpResponseEffector.schema.json"),
+          new ProtocolArchetype(
+              "HttpRequestReceptor", "protocol/http/HttpRequestReceptor.schema.json"),
+          new ProtocolArchetype(
+              "HttpResponseReceptor", "protocol/http/HttpResponseReceptor.schema.json"),
+          new ProtocolArchetype(
+              "HttpRequestInteraction", "protocol/http/HttpRequestInteraction.schema.json"),
+          new ProtocolArchetype(
+              "HttpResponseInteraction", "protocol/http/HttpResponseInteraction.schema.json"),
+          new ProtocolArchetype("RelaySignal", "protocol/relay/RelaySignal.schema.json"),
+          new ProtocolArchetype("RelayEffector", "protocol/relay/RelayEffector.schema.json"),
+          new ProtocolArchetype("RelayReceptor", "protocol/relay/RelayReceptor.schema.json"),
+          new ProtocolArchetype("RelayInteraction", "protocol/relay/RelayInteraction.schema.json"));
+
   private final DefinitionManagerClient client;
 
   public StructureSeedRunner(DefinitionManagerClient client) {
@@ -54,14 +76,17 @@ public class StructureSeedRunner implements ApplicationRunner {
             "ARCHETYPE",
             Map.of("title", "OperationRequest"),
             baseArchetypeId,
-            "OperationRequest.json");
+            "OperationRequest.schema.json");
 
     UUID operationResponseArchId =
         ensureAscription(
             "ARCHETYPE",
             Map.of("title", "OperationResponse"),
             baseArchetypeId,
-            "OperationResponse.json");
+            "OperationResponse.schema.json");
+
+    // 1b. Register protocol archetypes (HTTP, Relay)
+    registerProtocolArchetypes(baseArchetypeId);
 
     // 2. Register Structure
     UUID structureAscId =
@@ -172,4 +197,14 @@ public class StructureSeedRunner implements ApplicationRunner {
   private UUID extractId(JsonNode ascription) {
     return UUID.fromString(ascription.path("id").asText());
   }
+
+  private void registerProtocolArchetypes(UUID baseArchetypeId) {
+    for (ProtocolArchetype proto : PROTOCOL_ARCHETYPES) {
+      ensureAscription(
+          "ARCHETYPE", Map.of("title", proto.title()), baseArchetypeId, proto.schemaFile());
+    }
+    log.info("Registered {} protocol archetypes", PROTOCOL_ARCHETYPES.size());
+  }
+
+  private record ProtocolArchetype(String title, String schemaFile) {}
 }

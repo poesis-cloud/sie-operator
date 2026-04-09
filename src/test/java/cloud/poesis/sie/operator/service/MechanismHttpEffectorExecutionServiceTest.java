@@ -22,7 +22,7 @@ class MechanismHttpEffectorExecutionServiceTest {
   void setUp() throws IOException {
     server = new MockWebServer();
     server.start();
-    dispatcher = new MechanismHttpEffectorExecutionService(WebClient.builder());
+    dispatcher = new MechanismHttpEffectorExecutionService(WebClient.builder(), 30);
   }
 
   @AfterEach
@@ -31,11 +31,37 @@ class MechanismHttpEffectorExecutionServiceTest {
   }
 
   @Test
-  void supportsEffectsWithTargetUriAndMethod() {
+  void supportsEffectsWithHttpRequestEffectorArchetype() {
+    EffectDto effect =
+        new EffectDto(
+            "HttpRequest",
+            Map.of("targetUri", "http://localhost/test", "method", "GET"),
+            "HttpRequestEffector",
+            null,
+            null,
+            false);
+    assertThat(dispatcher.supports(effect)).isTrue();
+  }
+
+  @Test
+  void supportsEffectsWithTargetUriAndMethodLegacy() {
     EffectDto effect =
         EffectDto.fireAndForget(
             "HttpRequest", Map.of("targetUri", "http://localhost/test", "method", "GET"));
     assertThat(dispatcher.supports(effect)).isTrue();
+  }
+
+  @Test
+  void doesNotSupportNonHttpEffectorArchetype() {
+    EffectDto effect =
+        new EffectDto(
+            "RelaySignal",
+            Map.of("targetUri", "http://localhost/test", "method", "GET"),
+            "RelayEffector",
+            null,
+            null,
+            false);
+    assertThat(dispatcher.supports(effect)).isFalse();
   }
 
   @Test

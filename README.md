@@ -242,25 +242,25 @@ The Operator validates at four levels, each corresponding to a phase in the exec
 ```
 sie-operator/
 ├── def/statement/                      # GSM statement definitions
-│   ├── OperationRequest.json           # Receptor data archetype (operator input contract)
-│   ├── OperationResponse.json          # Effector data archetype (operator output contract)
+│   ├── OperationRequest.schema.json     # Receptor data archetype (operator input contract)
+│   ├── OperationResponse.schema.json   # Effector data archetype (operator output contract)
 │   ├── OperatorMechanism.json          # Mechanism statement (Starlark rule)
 │   ├── OperatorStructure.json          # Structure statement (purpose: sie-operator)
 │   └── protocol/
 │       ├── http/                       # HTTP protocol archetype family (8 files)
-│       │   ├── HttpRequest.json        # Request data: method, targetUri, body, ...
-│       │   ├── HttpResponse.json       # Response data: statusCode, body, ...
-│       │   ├── HttpRequestEffector.json
-│       │   ├── HttpRequestReceptor.json
-│       │   ├── HttpRequestInteraction.json
-│       │   ├── HttpResponseEffector.json
-│       │   ├── HttpResponseReceptor.json
-│       │   └── HttpResponseInteraction.json
+│       │   ├── HttpRequest.schema.json          # Request data: method, targetUri, body, ...
+│       │   ├── HttpResponse.schema.json         # Response data: statusCode, body, ...
+│       │   ├── HttpRequestEffector.schema.json
+│       │   ├── HttpRequestReceptor.schema.json
+│       │   ├── HttpRequestInteraction.schema.json
+│       │   ├── HttpResponseEffector.schema.json
+│       │   ├── HttpResponseReceptor.schema.json
+│       │   └── HttpResponseInteraction.schema.json
 │       ├── relay/                      # Relay protocol archetype family (4 files)
-│       │   ├── RelaySignal.json         # Data: causal signal (unconstrained body)
-│       │   ├── RelayEffector.json       # Effector: causal signal emission
-│       │   ├── RelayReceptor.json       # Receptor: causal signal reception
-│       │   └── RelayInteraction.json    # Interaction: causal propagation link
+│       │   ├── RelaySignal.schema.json          # Data: causal signal (unconstrained body)
+│       │   ├── RelayEffector.schema.json        # Effector: causal signal emission
+│       │   ├── RelayReceptor.schema.json        # Receptor: causal signal reception
+│       │   └── RelayInteraction.schema.json     # Interaction: causal propagation link
 │       └── kafka/                      # Reserved for Kafka protocol
 │
 ├── src/main/java/cloud/poesis/sie/operator/

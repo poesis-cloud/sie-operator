@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import cloud.poesis.sie.operator.client.DefinitionManagerClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,6 +43,21 @@ class StructureSeedRunnerTest {
   private static final UUID RECEPTOR_ASC_ID = UUID.randomUUID();
   private static final UUID EFFECTOR_ASC_ID = UUID.randomUUID();
 
+  private static final List<String> PROTOCOL_ARCHETYPE_TITLES =
+      List.of(
+          "HttpRequest",
+          "HttpResponse",
+          "HttpRequestEffector",
+          "HttpResponseEffector",
+          "HttpRequestReceptor",
+          "HttpResponseReceptor",
+          "HttpRequestInteraction",
+          "HttpResponseInteraction",
+          "RelaySignal",
+          "RelayEffector",
+          "RelayReceptor",
+          "RelayInteraction");
+
   @Mock private DefinitionManagerClient client;
 
   private StructureSeedRunner service;
@@ -65,6 +81,7 @@ class StructureSeedRunnerTest {
         .thenReturn(Optional.empty());
     when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationResponse"))))
         .thenReturn(Optional.empty());
+    stubProtocolArchetypesNotExist();
     when(client.findAscription(eq("STRUCTURE"), eq(Map.of("purpose", "sie-operator"))))
         .thenReturn(Optional.empty());
     when(client.findAscription(eq("MECHANISM"), eq(Map.of("function", "run-operation"))))
@@ -72,10 +89,9 @@ class StructureSeedRunnerTest {
     when(client.findAscription(eq("RECEPTOR"), any())).thenReturn(Optional.empty());
     when(client.findAscription(eq("EFFECTOR"), any())).thenReturn(Optional.empty());
 
-    // Creations return IDs
+    // Creations return IDs (2 custom + 12 protocol archetypes)
     when(client.createAscription(eq(BASE_ARCHETYPE_ID), any()))
-        .thenReturn(ascriptionNode(OP_REQUEST_ARCH_ID))
-        .thenReturn(ascriptionNode(OP_RESPONSE_ARCH_ID));
+        .thenAnswer(invocation -> ascriptionNode(UUID.randomUUID()));
     when(client.createAscription(eq(STRUCTURE_ARCHETYPE_ID), any()))
         .thenReturn(ascriptionNode(STRUCTURE_ASC_ID));
     when(client.createAscription(eq(MECHANISM_ARCHETYPE_ID), any()))
@@ -87,9 +103,8 @@ class StructureSeedRunnerTest {
 
     service.run(null);
 
-    // Verify all six ascription types were created
-    verify(client, times(2))
-        .createAscription(eq(BASE_ARCHETYPE_ID), any()); // OperationRequest + OperationResponse
+    // 2 custom + 12 protocol = 14 ARCHETYPE ascriptions created
+    verify(client, times(14)).createAscription(eq(BASE_ARCHETYPE_ID), any());
     verify(client).createAscription(eq(STRUCTURE_ARCHETYPE_ID), any());
     verify(client).createAscription(eq(MECHANISM_ARCHETYPE_ID), any());
     verify(client).createAscription(eq(RECEPTOR_ARCHETYPE_ID), any());
@@ -110,6 +125,7 @@ class StructureSeedRunnerTest {
         .thenReturn(Optional.of(ascriptionNode(OP_REQUEST_ARCH_ID)));
     when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationResponse"))))
         .thenReturn(Optional.of(ascriptionNode(OP_RESPONSE_ARCH_ID)));
+    stubProtocolArchetypesExist();
     when(client.findAscription(eq("STRUCTURE"), eq(Map.of("purpose", "sie-operator"))))
         .thenReturn(Optional.of(ascriptionNode(STRUCTURE_ASC_ID)));
     when(client.findAscription(eq("MECHANISM"), eq(Map.of("function", "run-operation"))))
@@ -148,6 +164,7 @@ class StructureSeedRunnerTest {
         .thenReturn(Optional.of(ascriptionNode(OP_REQUEST_ARCH_ID)));
     when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationResponse"))))
         .thenReturn(Optional.of(ascriptionNode(OP_RESPONSE_ARCH_ID)));
+    stubProtocolArchetypesExist();
     when(client.findAscription(eq("STRUCTURE"), eq(Map.of("purpose", "sie-operator"))))
         .thenReturn(Optional.of(ascriptionNode(STRUCTURE_ASC_ID)));
     when(client.findAscription(eq("MECHANISM"), eq(Map.of("function", "run-operation"))))
@@ -178,6 +195,20 @@ class StructureSeedRunnerTest {
   private void stubBaseArchetype(String title, UUID id) {
     when(client.findAscription("ARCHETYPE", Map.of("title", title)))
         .thenReturn(Optional.of(ascriptionNode(id)));
+  }
+
+  private void stubProtocolArchetypesNotExist() {
+    for (String title : PROTOCOL_ARCHETYPE_TITLES) {
+      when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", title))))
+          .thenReturn(Optional.empty());
+    }
+  }
+
+  private void stubProtocolArchetypesExist() {
+    for (String title : PROTOCOL_ARCHETYPE_TITLES) {
+      when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", title))))
+          .thenReturn(Optional.of(ascriptionNode(UUID.randomUUID())));
+    }
   }
 
   private static ObjectNode ascriptionNode(UUID id) {
