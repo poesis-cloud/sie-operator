@@ -1,0 +1,22 @@
+{
+  "$schema": "gsmarc://gsm/Archetype/v1",
+  "$ref": "gsmarc://gsm/Receptor/v1",
+  "$id": "gsmarc://ops/protocols/governance/GovernanceEventReceptor/v1",
+  "title": "GovernanceEventReceptor",
+  "description": "Identifies the receptor that receives governance events. The framework reference and accepted event types define the governance contract surface — which framework instance is listening for which governance signals. Source: ITIP Meta-Governance Framework; GSM Receptor semantics.",
+  "type": "object",
+  "required": [
+    "frameworkRef"
+  ],
+  "properties": {
+    "frameworkRef": {
+      "type": "string",
+      "format": "uri",
+      "minLength": 1,
+      "description": "URI reference identifying the governance framework this receptor listens for (e.g., 'gsmarc://frameworks/gdpr/v1'). Defines WHICH governance domain this port serves. Identity-bound: receptors of the same Definition always listen for the same framework. Source: ITIP framework catalog.",
+      "$gsm:identityBound": true,
+      "$gsm:queryable": true
+    }
+  },
+  "unevaluatedProperties": false
+}

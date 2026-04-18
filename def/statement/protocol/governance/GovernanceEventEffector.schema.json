@@ -1,0 +1,34 @@
+{
+  "$schema": "gsmarc://gsm/Archetype/v1",
+  "$ref": "gsmarc://gsm/Effector/v1",
+  "$id": "gsmarc://ops/protocols/governance/GovernanceEventEffector/v1",
+  "title": "GovernanceEventEffector",
+  "description": "Effector archetype for governance event emission. Typed by eventType (governance verb) and subjectRef (governance target). A governance event effector emits signals into the governance fabric — evaluation triggers, compliance assertions, or sourcing notifications. Source: ITIP Meta-Governance Framework; GSM Effector semantics.",
+  "type": "object",
+  "required": [
+    "eventType",
+    "subjectRef"
+  ],
+  "properties": {
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "EVALUATION_TRIGGER",
+        "COMPLIANCE_ASSERTION",
+        "SOURCING_NOTIFICATION"
+      ],
+      "description": "Governance event discriminator. Identity-bound: effectors of the same Definition always emit the same event type. Source: ITIP meta-governance.",
+      "$gsm:identityBound": true,
+      "$gsm:queryable": true
+    },
+    "subjectRef": {
+      "type": "string",
+      "format": "uri",
+      "minLength": 1,
+      "description": "URI reference to the governance subject this effector targets. Identity-bound: effectors of the same Definition always target the same governance subject. Source: GSM Ascription lifecycle.",
+      "$gsm:identityBound": true,
+      "$gsm:queryable": true
+    }
+  },
+  "unevaluatedProperties": false
+}

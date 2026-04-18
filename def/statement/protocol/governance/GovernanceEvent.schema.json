@@ -1,0 +1,43 @@
+{
+  "$schema": "gsmarc://gsm/Archetype/v1",
+  "$id": "gsmarc://ops/protocols/governance/GovernanceEvent/v1",
+  "title": "GovernanceEvent",
+  "description": "Types the data payload flowing through Governance Effectors/Receptors when the payload is a governance event message. A governance event signals a state change in the governance lifecycle — an evaluation trigger, a compliance assertion, or a sourcing notification. Extending archetypes add domain-specific payloads via $ref/allOf composition. Source: ITIP Meta-Governance Framework; GSM Directive/Norm/Ascription governance grammar.",
+  "type": "object",
+  "required": [
+    "eventType",
+    "subjectRef"
+  ],
+  "properties": {
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "EVALUATION_TRIGGER",
+        "COMPLIANCE_ASSERTION",
+        "SOURCING_NOTIFICATION"
+      ],
+      "description": "Governance event discriminator. EVALUATION_TRIGGER — signals that an evaluation cycle should be initiated for the referenced subject. COMPLIANCE_ASSERTION — asserts a compliance posture change for a governed entity. SOURCING_NOTIFICATION — notifies that a framework sourcing operation completed (new directives/norms ingested). Source: ITIP meta-governance; GSM Ascription lifecycle.",
+      "$gsm:identityBound": true,
+      "$gsm:queryable": true
+    },
+    "subjectRef": {
+      "type": "string",
+      "format": "uri",
+      "minLength": 1,
+      "description": "URI reference to the governance subject — the Definition or Ascription instance that this event pertains to (e.g., 'gsmarc://tenant/definitions/{id}'). Source: GSM Ascription lifecycle; ITIP evaluation model.",
+      "$gsm:identityBound": true,
+      "$gsm:queryable": true
+    },
+    "frameworkRef": {
+      "type": "string",
+      "format": "uri",
+      "minLength": 1,
+      "description": "URI reference to the governance framework under which this event is raised (e.g., 'gsmarc://frameworks/gdpr/v1'). Optional for cross-framework events. Source: ITIP framework catalog.",
+      "$gsm:queryable": true
+    },
+    "payload": {
+      "description": "Event-specific content. At protocol level, unconstrained; extending archetypes constrain this to a domain-specific shape via $ref/allOf composition."
+    }
+  },
+  "unevaluatedProperties": false
+}
