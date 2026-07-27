@@ -2,18 +2,11 @@ package cloud.poesis.sie.operator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import okhttp3.mockwebserver.Dispatcher;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,12 +16,27 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import okhttp3.mockwebserver.Dispatcher;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+
 /**
- * Integration test exercising the full CP execution flow with ITIP governance artifacts
- * (DIRECTIVE_NORM_OPERATIONALIZATION mechanism) against a mocked Definition Manager.
+ * Integration test exercising the full CP execution flow with ITIP governance
+ * artifacts
+ * (DIRECTIVE_NORM_OPERATIONALIZATION mechanism) against a mocked Definition
+ * Manager.
  *
- * <p>Simulates the complete frame resolution: Mechanism → Receptor (AppraisalTrigger) → Effector
- * (AppraisalFinding) → Archetype schemas. Uses the real ITIP Starlark rule to verify both GAP and
+ * <p>
+ * Simulates the complete frame resolution: Mechanism → Receptor
+ * (AppraisalTrigger) → Effector
+ * (AppraisalFinding) → Archetype schemas. Uses the real ITIP Starlark rule to
+ * verify both GAP and
  * COVERED appraisal cases end-to-end.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -52,18 +60,16 @@ class ItipGovernanceAppraisalIT {
   static final UUID EFFECTOR_ASC_ID = UUID.fromString("00000001-0001-0001-0001-000000000015");
 
   // Operator identity IDs (simulates bootstrap registration)
-  static final UUID OPERATOR_MECHANISM_ASC_ID =
-      UUID.fromString("00000001-0001-0001-0001-00000000aa00");
-  static final UUID OPERATOR_RECEPTOR_ASC_ID =
-      UUID.fromString("00000001-0001-0001-0001-00000000aa01");
+  static final UUID OPERATOR_MECHANISM_ASC_ID = UUID.fromString("00000001-0001-0001-0001-00000000aa00");
+  static final UUID OPERATOR_RECEPTOR_ASC_ID = UUID.fromString("00000001-0001-0001-0001-00000000aa01");
   static final UUID INTERACTION_ASC_ID = UUID.fromString("00000001-0001-0001-0001-00000000bb01");
 
   /**
-   * The real ITIP Starlark rule for DIRECTIVE_NORM_OPERATIONALIZATION — copied verbatim from
+   * The real ITIP Starlark rule for DIRECTIVE_NORM_OPERATIONALIZATION — copied
+   * verbatim from
    * itip/itip-frameworks/def/itip/meta-governance/DirectiveNormOperationalizationMechanism.json
    */
-  static final String STARLARK_RULE =
-      """
+  static final String STARLARK_RULE = """
       evt = sys.receive("AppraisalTrigger")
       directive = evt["subject"]
       norms = evt["relatedAscriptions"]
@@ -85,7 +91,8 @@ class ItipGovernanceAppraisalIT {
 
   static MockWebServer defmanMock;
 
-  @Autowired TestRestTemplate restTemplate;
+  @Autowired
+  TestRestTemplate restTemplate;
 
   @DynamicPropertySource
   static void overrideDefmanUrl(DynamicPropertyRegistry registry) {
@@ -113,26 +120,24 @@ class ItipGovernanceAppraisalIT {
     UUID qualifierDefId = UUID.randomUUID();
     UUID purposeDefId = UUID.randomUUID();
 
-    Map<String, Object> trigger =
+    Map<String, Object> trigger = Map.of(
+        "ruleType",
+        "gsm:rules/appraisal/directive/norm/operationalization",
+        "subjectType",
+        "DIRECTIVE",
+        "subjectDefinitionId",
+        directiveDefId.toString(),
+        "subject",
         Map.of(
-            "ruleType",
-            "gsm:rules/appraisal/directive/norm/operationalization",
-            "subjectType",
-            "DIRECTIVE",
-            "subjectDefinitionId",
-            directiveDefId.toString(),
-            "subject",
-            Map.of(
-                "structure", STRUCTURE_DEF_ID.toString(),
-                "modal", "MUST",
-                "verb", "ENSURE",
-                "qualifier", qualifierDefId.toString(),
-                "purpose", purposeDefId.toString()),
-            "relatedAscriptions",
-            List.of());
+            "structure", STRUCTURE_DEF_ID.toString(),
+            "modal", "MUST",
+            "verb", "ENSURE",
+            "qualifier", qualifierDefId.toString(),
+            "purpose", purposeDefId.toString()),
+        "relatedAscriptions",
+        List.of());
 
-    Map<String, Object> body =
-        Map.of("mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "operationInput", trigger);
+    Map<String, Object> body = Map.of("mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "operationInput", trigger);
 
     var response = restTemplate.postForEntity("/api/v1/operations", body, JsonNode.class);
 
@@ -167,35 +172,33 @@ class ItipGovernanceAppraisalIT {
     UUID qualifierDefId = UUID.randomUUID();
     UUID purposeDefId = UUID.randomUUID();
 
-    Map<String, Object> trigger =
+    Map<String, Object> trigger = Map.of(
+        "ruleType",
+        "gsm:rules/appraisal/directive/norm/operationalization",
+        "subjectType",
+        "DIRECTIVE",
+        "subjectDefinitionId",
+        directiveDefId.toString(),
+        "subject",
         Map.of(
-            "ruleType",
-            "gsm:rules/appraisal/directive/norm/operationalization",
-            "subjectType",
-            "DIRECTIVE",
-            "subjectDefinitionId",
-            directiveDefId.toString(),
-            "subject",
+            "structure", STRUCTURE_DEF_ID.toString(),
+            "modal", "MUST",
+            "verb", "ENSURE",
+            "qualifier", qualifierDefId.toString(),
+            "purpose", purposeDefId.toString()),
+        "relatedAscriptions",
+        List.of(
             Map.of(
-                "structure", STRUCTURE_DEF_ID.toString(),
-                "modal", "MUST",
-                "verb", "ENSURE",
-                "qualifier", qualifierDefId.toString(),
-                "purpose", purposeDefId.toString()),
-            "relatedAscriptions",
-            List.of(
-                Map.of(
-                    "structure",
-                    purposeDefId.toString(),
-                    "qualifier",
-                    qualifierDefId.toString(),
-                    "applicability",
-                    "true",
-                    "assertion",
-                    "true")));
+                "structure",
+                purposeDefId.toString(),
+                "qualifier",
+                qualifierDefId.toString(),
+                "applicability",
+                "true",
+                "assertion",
+                "true")));
 
-    Map<String, Object> body =
-        Map.of("mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "operationInput", trigger);
+    Map<String, Object> body = Map.of("mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "operationInput", trigger);
 
     var response = restTemplate.postForEntity("/api/v1/operations", body, JsonNode.class);
 
@@ -217,9 +220,8 @@ class ItipGovernanceAppraisalIT {
   void invalidTrigger_missingRequiredFields_returnsValidationError() {
     Map<String, Object> invalidInput = Map.of("unknownField", "value");
 
-    Map<String, Object> body =
-        Map.of(
-            "mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "operationInput", invalidInput);
+    Map<String, Object> body = Map.of(
+        "mechanismAscriptionId", MECHANISM_ASC_ID.toString(), "operationInput", invalidInput);
 
     var response = restTemplate.postForEntity("/api/v1/operations", body, JsonNode.class);
 
