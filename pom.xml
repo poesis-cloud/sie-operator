@@ -114,15 +114,15 @@
       </resource>
       <!--
         Protocol archetype source-of-truth lives in the ITIP framework
-        catalogue (sibling repo). HTTP schemas are vendored on the operator
-        classpath under statement/protocol/http/ so StructureSeedRunner can
-        register them at startup without a network round-trip. Cross-repo
-        coupling within the poesis workspace is intentional during the
-        design phase. See itip/def/frameworks/http/ for the canonical
-        definitions.
+        catalogue (sibling repo, itip-frameworks). HTTP schemas are vendored
+        on the operator classpath under statement/protocol/http/ so
+        StructureSeedRunner can register them at startup without a network
+        round-trip. Cross-repo coupling within the poesis workspace is
+        intentional during the design phase. See itip/itip-frameworks/def/http/
+        for the canonical definitions.
       -->
       <resource>
-        <directory>../../itip/def/frameworks/http</directory>
+        <directory>../../itip/itip-frameworks/def/http</directory>
         <targetPath>statement/protocol/http</targetPath>
         <includes>
           <include>*.schema.json</include>

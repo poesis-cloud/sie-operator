@@ -60,7 +60,7 @@ class ItipGovernanceAppraisalIT {
 
   /**
    * The real ITIP Starlark rule for DIRECTIVE_NORM_OPERATIONALIZATION — copied verbatim from
-   * itip/def/frameworks/itip/meta-governance/DirectiveNormOperationalizationMechanism.json
+   * itip/itip-frameworks/def/itip/meta-governance/DirectiveNormOperationalizationMechanism.json
    */
   static final String STARLARK_RULE =
       """
