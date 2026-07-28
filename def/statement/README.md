@@ -29,7 +29,7 @@ Each protocol defines a family of archetypes following the **Archetype Quad** pa
 ### Ownership split
 
 - **Operator-internal** (this repo, `protocol/`): protocols intrinsic to the Operator runtime — in-process causal propagation and DM ↔ Operator governance event exchange. `$id` scheme: `gsmarc://ops/protocols/{family}/{Title}/v1`.
-- **Application protocols** (ITIP, `itip/itip-frameworks/def/{family}/`): protocols by which sourced applications interact with the world (HTTP, Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket). `$id` scheme: `gsmarc://itip/frameworks/{family}/{Title}/v1`. The Operator vendors HTTP at build time via a Maven `<resource>` directive (see `pom.xml`).
+- **Application protocols** (ITIP, `itip/itip-frameworks/frameworks/{family}/`): protocols by which sourced applications interact with the world (HTTP, Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket). `$id` scheme: `gsmarc://itip/frameworks/{family}/{Title}/v1`. The Operator vendors HTTP at build time via a Maven `<resource>` directive (see `pom.xml`).
 
 ### Implemented (operator-internal)
 
@@ -40,10 +40,14 @@ Each protocol defines a family of archetypes following the **Archetype Quad** pa
 
 ### Implemented (ITIP-owned, vendored to operator)
 
-| Protocol                                                             | Boundary           | Description                                  |
-| -------------------------------------------------------------------- | ------------------ | -------------------------------------------- |
-| [`itip/itip-frameworks/def/http/`](../../../../itip/itip-frameworks/def/http/) | Network (external) | HTTP request/response dispatch via WebClient |
+| Protocol                                                                                     | Boundary           | Description                                  |
+| -------------------------------------------------------------------------------------------- | ------------------ | -------------------------------------------- |
+| [`itip/itip-frameworks/frameworks/http/`](../../../../itip/itip-frameworks/frameworks/http/) | Network (external) | HTTP request/response dispatch via WebClient |
+
+The HTTP archetypes inherit the **ITIP base Archetypes** (`gsmarc://itip/{SubjectType}/v1`), so
+[`itip/itip-frameworks/frameworks/itip/base/`](../../../../itip/itip-frameworks/frameworks/itip/base/) is
+vendored alongside them under `statement/itip/base/` and registered first by `StructureSeedRunner`.
 
 ### Reserved (ITIP-owned, not yet implemented)
 
-Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket — archetype quads to be authored under `itip/itip-frameworks/def/{family}/` when first sourced.
+Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket — archetype quads to be authored under `itip/itip-frameworks/frameworks/{family}/` when first sourced.

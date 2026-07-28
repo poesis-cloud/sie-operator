@@ -118,14 +118,25 @@
         on the operator classpath under statement/protocol/http/ so
         StructureSeedRunner can register them at startup without a network
         round-trip. Cross-repo coupling within the poesis workspace is
-        intentional during the design phase. See itip/itip-frameworks/def/http/
+        intentional during the design phase. See itip/itip-frameworks/frameworks/http/
         for the canonical definitions.
+
+        The HTTP archetypes inherit the ITIP base archetypes (gsmarc://itip/*),
+        not the GSM bases directly, so the ITIP Layer-2 bases are vendored too
+        and registered first.
       -->
       <resource>
-        <directory>../../itip/itip-frameworks/def/http</directory>
+        <directory>../../itip/itip-frameworks/frameworks/itip/base</directory>
+        <targetPath>statement/itip/base</targetPath>
+        <includes>
+          <include>*.archetype.json</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>../../itip/itip-frameworks/frameworks/http</directory>
         <targetPath>statement/protocol/http</targetPath>
         <includes>
-          <include>*.schema.json</include>
+          <include>*.archetype.json</include>
         </includes>
       </resource>
     </resources>

@@ -34,8 +34,7 @@ class OperationInputValidationServiceTest {
 
     Map<String, Object> input = Map.of("ruleType", "test-rule", "subjectType", "DIRECTIVE");
 
-    OperationInputValidationService.ValidationResult result =
-        validator.validate("TestArchetype", input, schema);
+    OperationInputValidationService.ValidationResult result = validator.validate("TestArchetype", input, schema);
 
     assertThat(result.isValid()).isTrue();
     assertThat(result.errors()).isNull();
@@ -53,8 +52,7 @@ class OperationInputValidationServiceTest {
 
     Map<String, Object> input = Map.of("ruleType", "test-rule");
 
-    OperationInputValidationService.ValidationResult result =
-        validator.validate("TestArchetype", input, schema);
+    OperationInputValidationService.ValidationResult result = validator.validate("TestArchetype", input, schema);
 
     assertThat(result.isValid()).isFalse();
     assertThat(result.archetypeName()).isEqualTo("TestArchetype");
@@ -71,8 +69,7 @@ class OperationInputValidationServiceTest {
 
     Map<String, Object> input = Map.of("count", "not-a-number");
 
-    OperationInputValidationService.ValidationResult result =
-        validator.validate("TestArchetype", input, schema);
+    OperationInputValidationService.ValidationResult result = validator.validate("TestArchetype", input, schema);
 
     assertThat(result.isValid()).isFalse();
     assertThat(result.errors()).isNotEmpty();
@@ -82,14 +79,50 @@ class OperationInputValidationServiceTest {
   void validInputWithJsonNodePasses() {
     ObjectNode schema = MAPPER.createObjectNode();
     schema.put("type", "object");
+    schema.putObject("properties").putObject("key").put("type", "string");
 
     ObjectNode inputNode = MAPPER.createObjectNode();
     inputNode.put("key", "value");
 
-    OperationInputValidationService.ValidationResult result =
-        validator.validate("TestArchetype", inputNode, schema);
+    OperationInputValidationService.ValidationResult result = validator.validate("TestArchetype", inputNode, schema);
 
     assertThat(result.isValid()).isTrue();
+  }
+
+  @Test
+  void undeclaredPayloadPropertyRejectedByAppliedClosure() {
+    ObjectNode schema = MAPPER.createObjectNode();
+    schema.put("type", "object");
+    schema.putObject("properties").putObject("key").put("type", "string");
+
+    ObjectNode inputNode = MAPPER.createObjectNode();
+    inputNode.put("key", "value");
+    inputNode.put("bogus", 1);
+
+    OperationInputValidationService.ValidationResult result = validator.validate("TestArchetype", inputNode, schema);
+
+    assertThat(result.isValid()).isFalse();
+    assertThat(result.errors()).contains("bogus");
+  }
+
+  @Test
+  void selfClosingSchemaNotModified() {
+    ObjectNode schema = MAPPER.createObjectNode();
+    schema.put("type", "object");
+    schema.put("unevaluatedProperties", false);
+
+    assertThat(OperationInputValidationService.applyPayloadClosure(schema)).isSameAs(schema);
+  }
+
+  @Test
+  void openSchemaClosedWithoutMutatingOriginal() {
+    ObjectNode schema = MAPPER.createObjectNode();
+    schema.put("type", "object");
+
+    var closed = OperationInputValidationService.applyPayloadClosure(schema);
+
+    assertThat(closed.get("unevaluatedProperties").booleanValue()).isFalse();
+    assertThat(schema.has("unevaluatedProperties")).isFalse();
   }
 
   @Test
@@ -99,8 +132,7 @@ class OperationInputValidationServiceTest {
 
     Map<String, Object> input = Map.of();
 
-    OperationInputValidationService.ValidationResult result =
-        validator.validate("TestArchetype", input, schema);
+    OperationInputValidationService.ValidationResult result = validator.validate("TestArchetype", input, schema);
 
     assertThat(result.isValid()).isTrue();
   }
@@ -133,12 +165,11 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpRequestSchemaAcceptsGetWithOnlyMethodAndTargetUri() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.schema.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.archetype.json");
 
     Map<String, Object> getRequest = Map.of("method", "GET", "targetUri", "/api/items");
 
-    OperationInputValidationService.ValidationResult result =
-        validator.validate("HttpRequest", getRequest, schema);
+    OperationInputValidationService.ValidationResult result = validator.validate("HttpRequest", getRequest, schema);
 
     assertThat(result.isValid())
         .as("GET request with only method + targetUri must pass HttpRequest schema")
@@ -147,17 +178,15 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpRequestSchemaAcceptsPostWithBody() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.schema.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.archetype.json");
 
-    Map<String, Object> postRequest =
-        Map.of(
-            "method", "POST",
-            "targetUri", "/api/orders",
-            "contentType", "application/json",
-            "body", Map.of("orderId", "ORD-001"));
+    Map<String, Object> postRequest = Map.of(
+        "method", "POST",
+        "targetUri", "/api/orders",
+        "contentType", "application/json",
+        "body", Map.of("orderId", "ORD-001"));
 
-    OperationInputValidationService.ValidationResult result =
-        validator.validate("HttpRequest", postRequest, schema);
+    OperationInputValidationService.ValidationResult result = validator.validate("HttpRequest", postRequest, schema);
 
     assertThat(result.isValid())
         .as("POST request with method, targetUri, contentType, and body must pass")
@@ -166,12 +195,11 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpRequestSchemaRejectsWithoutMethod() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.schema.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpRequest.archetype.json");
 
     Map<String, Object> noMethod = Map.of("targetUri", "/api/items");
 
-    OperationInputValidationService.ValidationResult result =
-        validator.validate("HttpRequest", noMethod, schema);
+    OperationInputValidationService.ValidationResult result = validator.validate("HttpRequest", noMethod, schema);
 
     assertThat(result.isValid()).isFalse();
     assertThat(result.errors()).contains("method");
@@ -179,12 +207,11 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpResponseSchemaAcceptsNoContentWithOnlyStatusCode() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.schema.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.archetype.json");
 
     Map<String, Object> noContent = Map.of("statusCode", 204);
 
-    OperationInputValidationService.ValidationResult result =
-        validator.validate("HttpResponse", noContent, schema);
+    OperationInputValidationService.ValidationResult result = validator.validate("HttpResponse", noContent, schema);
 
     assertThat(result.isValid())
         .as("204 No Content with only statusCode must pass HttpResponse schema")
@@ -193,13 +220,12 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpResponseSchemaAcceptsFullResponse() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.schema.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.archetype.json");
 
-    Map<String, Object> fullResponse =
-        Map.of("statusCode", 200, "contentType", "application/json", "body", "{\"ok\":true}");
+    Map<String, Object> fullResponse = Map.of("statusCode", 200, "contentType", "application/json", "body",
+        "{\"ok\":true}");
 
-    OperationInputValidationService.ValidationResult result =
-        validator.validate("HttpResponse", fullResponse, schema);
+    OperationInputValidationService.ValidationResult result = validator.validate("HttpResponse", fullResponse, schema);
 
     assertThat(result.isValid())
         .as("200 response with statusCode, contentType, and body must pass")
@@ -208,12 +234,11 @@ class OperationInputValidationServiceTest {
 
   @Test
   void httpResponseSchemaRejectsWithoutStatusCode() throws IOException {
-    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.schema.json");
+    JsonNode schema = loadSchema("statement/protocol/http/HttpResponse.archetype.json");
 
     Map<String, Object> noStatus = Map.of("body", "some body");
 
-    OperationInputValidationService.ValidationResult result =
-        validator.validate("HttpResponse", noStatus, schema);
+    OperationInputValidationService.ValidationResult result = validator.validate("HttpResponse", noStatus, schema);
 
     assertThat(result.isValid()).isFalse();
     assertThat(result.errors()).contains("statusCode");
