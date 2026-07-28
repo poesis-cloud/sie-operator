@@ -36,18 +36,18 @@ public class StructureSeedRunner implements ApplicationRunner {
   /**
    * ITIP Layer-2 base archetypes. Every ITIP framework archetype (including the HTTP protocol
    * archetypes below) inherits one of these rather than a GSM base directly, so they must be
-   * registered first. {@code ItipAscription} is the rootless facet the seven bases compose.
+   * registered first. {@code FrameworkAscription} is the rootless facet the seven bases compose.
    */
-  private static final List<ProtocolArchetype> ITIP_BASE_ARCHETYPES =
+  private static final List<ProtocolArchetype> FRAMEWORK_BASE_ARCHETYPES =
       List.of(
-          new ProtocolArchetype("ItipAscription", "itip/base/Ascription.archetype.json"),
-          new ProtocolArchetype("ItipStructure", "itip/base/Structure.archetype.json"),
-          new ProtocolArchetype("ItipMechanism", "itip/base/Mechanism.archetype.json"),
-          new ProtocolArchetype("ItipEffector", "itip/base/Effector.archetype.json"),
-          new ProtocolArchetype("ItipReceptor", "itip/base/Receptor.archetype.json"),
-          new ProtocolArchetype("ItipInteraction", "itip/base/Interaction.archetype.json"),
-          new ProtocolArchetype("ItipDirective", "itip/base/Directive.archetype.json"),
-          new ProtocolArchetype("ItipNorm", "itip/base/Norm.archetype.json"));
+          new ProtocolArchetype("FrameworkAscription", "base/Ascription.archetype.json"),
+          new ProtocolArchetype("FrameworkStructure", "base/Structure.archetype.json"),
+          new ProtocolArchetype("FrameworkMechanism", "base/Mechanism.archetype.json"),
+          new ProtocolArchetype("FrameworkEffector", "base/Effector.archetype.json"),
+          new ProtocolArchetype("FrameworkReceptor", "base/Receptor.archetype.json"),
+          new ProtocolArchetype("FrameworkInteraction", "base/Interaction.archetype.json"),
+          new ProtocolArchetype("FrameworkDirective", "base/Directive.archetype.json"),
+          new ProtocolArchetype("FrameworkNorm", "base/Norm.archetype.json"));
 
   private static final List<ProtocolArchetype> PROTOCOL_ARCHETYPES =
       List.of(
@@ -103,7 +103,7 @@ public class StructureSeedRunner implements ApplicationRunner {
 
     // 1b. Register the ITIP Layer-2 bases, then the protocol archetypes (HTTP,
     // Relay)
-    registerArchetypes("ITIP base", ITIP_BASE_ARCHETYPES, baseArchetypeId);
+    registerArchetypes("framework base", FRAMEWORK_BASE_ARCHETYPES, baseArchetypeId);
     registerArchetypes("protocol", PROTOCOL_ARCHETYPES, baseArchetypeId);
 
     // 2. Register Structure

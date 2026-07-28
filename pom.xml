@@ -121,13 +121,13 @@
         intentional during the design phase. See gsm-frameworks/frameworks/http/
         for the canonical definitions.
 
-        The HTTP archetypes inherit the ITIP base archetypes (gsmarc://gsm-frameworks/*),
+        The HTTP archetypes inherit the framework base archetypes (gsmarc://gsm-frameworks/*),
         not the GSM bases directly, so the ITIP Layer-2 bases are vendored too
         and registered first.
       -->
       <resource>
-        <directory>../../gsm-frameworks/frameworks/itip/base</directory>
-        <targetPath>statement/itip/base</targetPath>
+        <directory>../../gsm-frameworks/frameworks/base</directory>
+        <targetPath>statement/base</targetPath>
         <includes>
           <include>*.archetype.json</include>
         </includes>

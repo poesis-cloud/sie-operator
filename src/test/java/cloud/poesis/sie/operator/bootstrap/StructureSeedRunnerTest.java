@@ -45,14 +45,14 @@ class StructureSeedRunnerTest {
 
   private static final List<String> PROTOCOL_ARCHETYPE_TITLES =
       List.of(
-          "ItipAscription",
-          "ItipStructure",
-          "ItipMechanism",
-          "ItipEffector",
-          "ItipReceptor",
-          "ItipInteraction",
-          "ItipDirective",
-          "ItipNorm",
+          "FrameworkAscription",
+          "FrameworkStructure",
+          "FrameworkMechanism",
+          "FrameworkEffector",
+          "FrameworkReceptor",
+          "FrameworkInteraction",
+          "FrameworkDirective",
+          "FrameworkNorm",
           "HttpRequest",
           "HttpResponse",
           "HttpRequestEffector",
@@ -97,7 +97,7 @@ class StructureSeedRunnerTest {
     when(client.findAscription(eq("RECEPTOR"), any())).thenReturn(Optional.empty());
     when(client.findAscription(eq("EFFECTOR"), any())).thenReturn(Optional.empty());
 
-    // Creations return IDs (2 custom + 8 ITIP base + 12 protocol archetypes)
+    // Creations return IDs (2 custom + 8 framework base + 12 protocol archetypes)
     when(client.createAscription(eq(BASE_ARCHETYPE_ID), any()))
         .thenAnswer(invocation -> ascriptionNode(UUID.randomUUID()));
     when(client.createAscription(eq(STRUCTURE_ARCHETYPE_ID), any()))
