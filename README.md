@@ -110,7 +110,7 @@ All protocols are **structurally identical**: same dispatcher SPI (`MechanismEff
 **Ownership split** (decided during the GSM Sourcer / SBAS design phase):
 
 - **Operator-internal protocols** live in this repo under `def/statement/protocol/` — Relay (in-memory causal propagation) and Governance (DM ↔ Operator events). These are part of the Operator runtime contract.
-- **Application protocols** (HTTP, Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket) are owned by **ITIP** under `itip/itip-frameworks/frameworks/{family}/` (the standalone, public `itip-frameworks` repo). They describe how applications interact with the world and are catalogued alongside other ITIP frameworks (TOGAF, ISO 25000, GDPR…). The Operator vendors HTTP at build time via a Maven `<resource>` directive pointing to ITIP, so `StructureSeedRunner` can still register them at startup.
+- **Application protocols** (HTTP, Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket) are owned by **ITIP** under `gsm-frameworks/frameworks/{family}/` (the standalone, public `gsm-frameworks` repo). They describe how applications interact with the world and are catalogued alongside other ITIP frameworks (TOGAF, ISO 25000, GDPR…). The Operator vendors HTTP at build time via a Maven `<resource>` directive pointing to ITIP, so `StructureSeedRunner` can still register them at startup.
 
 | Protocol                                        | Owner        | Boundary           | Analogy            | Description                                                                                           |
 | ----------------------------------------------- | ------------ | ------------------ | ------------------ | ----------------------------------------------------------------------------------------------------- |
@@ -132,9 +132,9 @@ Each protocol defines a family of 4 Archetypes (following the GSM Effector/Recep
 
 ### Protocols
 
-#### HTTP (`itip/itip-frameworks/frameworks/http/` — vendored to operator classpath)
+#### HTTP (`gsm-frameworks/frameworks/http/` — vendored to operator classpath)
 
-Crosses the network boundary — analogous to a **syscall** or **FFI call**. `$id` scheme: `gsmarc://itip/frameworks/http/{Title}/v1`.
+Crosses the network boundary — analogous to a **syscall** or **FFI call**. `$id` scheme: `gsmarc://gsm-frameworks/http/{Title}/v1`.
 
 Two directions:
 
@@ -162,7 +162,7 @@ The name "relay" is sourced from three domains:
 
 #### Kafka and other application protocols (reserved)
 
-Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket archetype families are reserved under `itip/itip-frameworks/frameworks/{family}/`. Not yet implemented.
+Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket archetype families are reserved under `gsm-frameworks/frameworks/{family}/`. Not yet implemented.
 
 ---
 
@@ -261,7 +261,7 @@ sie-operator/
 │       └── governance/                 # Governance event/result archetype family (8 files)
 │
 │   # NOTE: Application protocols (HTTP, Kafka, AMQP, gRPC, GraphQL, JDBC,
-│   # WebSocket) are owned by ITIP — see itip/itip-frameworks/frameworks/{family}/.
+│   # WebSocket) are owned by ITIP — see gsm-frameworks/frameworks/{family}/.
 │   # HTTP is vendored to the operator classpath via a Maven <resource>
 │   # directive in pom.xml so StructureSeedRunner can register it at startup.
 │

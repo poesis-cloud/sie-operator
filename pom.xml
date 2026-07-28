@@ -114,26 +114,26 @@
       </resource>
       <!--
         Protocol archetype source-of-truth lives in the ITIP framework
-        catalogue (sibling repo, itip-frameworks). HTTP schemas are vendored
+        catalogue (sibling repo, gsm-frameworks). HTTP schemas are vendored
         on the operator classpath under statement/protocol/http/ so
         StructureSeedRunner can register them at startup without a network
         round-trip. Cross-repo coupling within the poesis workspace is
-        intentional during the design phase. See itip/itip-frameworks/frameworks/http/
+        intentional during the design phase. See gsm-frameworks/frameworks/http/
         for the canonical definitions.
 
-        The HTTP archetypes inherit the ITIP base archetypes (gsmarc://itip/*),
+        The HTTP archetypes inherit the ITIP base archetypes (gsmarc://gsm-frameworks/*),
         not the GSM bases directly, so the ITIP Layer-2 bases are vendored too
         and registered first.
       -->
       <resource>
-        <directory>../../itip/itip-frameworks/frameworks/itip/base</directory>
+        <directory>../../gsm-frameworks/frameworks/itip/base</directory>
         <targetPath>statement/itip/base</targetPath>
         <includes>
           <include>*.archetype.json</include>
         </includes>
       </resource>
       <resource>
-        <directory>../../itip/itip-frameworks/frameworks/http</directory>
+        <directory>../../gsm-frameworks/frameworks/http</directory>
         <targetPath>statement/protocol/http</targetPath>
         <includes>
           <include>*.archetype.json</include>
