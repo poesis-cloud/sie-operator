@@ -16,8 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Validates inputs against archetype JSON schemas resolved from the mechanism
- * frame. Used to
+ * Validates inputs against archetype JSON schemas resolved from the mechanism frame. Used to
  * validate trigger inputs (receptor data) and effect outputs (effector data).
  */
 @Service
@@ -29,16 +28,16 @@ public class OperationInputValidationService {
   private final JsonSchemaFactory schemaFactory;
 
   public OperationInputValidationService() {
-    this.schemaFactory = JsonSchemaFactory.builder(
-        JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012))
-        .build();
+    this.schemaFactory =
+        JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012))
+            .build();
   }
 
   /**
    * Validates data against an archetype JSON Schema from the frame.
    *
-   * @param archetypeName   the archetype name (for error messages)
-   * @param data            the data to validate
+   * @param archetypeName the archetype name (for error messages)
+   * @param data the data to validate
    * @param archetypeSchema the archetype statement (JSON Schema) from defman
    * @return validation result
    */
@@ -51,8 +50,8 @@ public class OperationInputValidationService {
   /**
    * Validates data (as JsonNode) against an archetype JSON Schema.
    *
-   * @param archetypeName   the archetype name (for error messages)
-   * @param inputNode       the data to validate
+   * @param archetypeName the archetype name (for error messages)
+   * @param inputNode the data to validate
    * @param archetypeSchema the archetype statement (JSON Schema) from defman
    * @return validation result
    */
@@ -66,28 +65,22 @@ public class OperationInputValidationService {
       return ValidationResult.valid();
     }
 
-    String errorMessages = errors.stream().map(ValidationMessage::getMessage).collect(Collectors.joining("; "));
+    String errorMessages =
+        errors.stream().map(ValidationMessage::getMessage).collect(Collectors.joining("; "));
 
     log.warn("Input validation failed against archetype '{}': {}", archetypeName, errorMessages);
     return ValidationResult.invalid(archetypeName, errorMessages);
   }
 
   /**
-   * Returns the schema to validate a payload against: the data archetype schema
-   * with {@code
-   * unevaluatedProperties: false} applied at its root, so that a payload carries
-   * only properties
+   * Returns the schema to validate a payload against: the data archetype schema with {@code
+   * unevaluatedProperties: false} applied at its root, so that a payload carries only properties
    * declared somewhere in the resolved chain.
    *
-   * <p>
-   * Mirrors the closure defman applies to ascription statements — see GSM §5
-   * ("Statement
-   * closure"). Closure cannot be declared in the archetype schemas themselves
-   * without defeating
-   * their extensibility, so it is applied here, where the concrete data archetype
-   * is known. The
-   * input node is never mutated. Schemas already declaring an at-least-as-strict
-   * top-level closure
+   * <p>Mirrors the closure defman applies to ascription statements — see GSM §5 ("Statement
+   * closure"). Closure cannot be declared in the archetype schemas themselves without defeating
+   * their extensibility, so it is applied here, where the concrete data archetype is known. The
+   * input node is never mutated. Schemas already declaring an at-least-as-strict top-level closure
    * are returned unchanged.
    */
   static JsonNode applyPayloadClosure(JsonNode archetypeSchema) {

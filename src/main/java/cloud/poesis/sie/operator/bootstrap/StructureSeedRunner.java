@@ -19,10 +19,8 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 /**
- * Registers the SIE Operator's own Structure, Mechanism, Receptor, and Effector
- * ascriptions on the
- * Definition Manager at application startup. Idempotent: checks for existing
- * ascriptions before
+ * Registers the SIE Operator's own Structure, Mechanism, Receptor, and Effector ascriptions on the
+ * Definition Manager at application startup. Idempotent: checks for existing ascriptions before
  * creating new ones.
  */
 @Component
@@ -32,45 +30,45 @@ public class StructureSeedRunner implements ApplicationRunner {
   private static final Logger log = LoggerFactory.getLogger(StructureSeedRunner.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private static final String STATEMENT_DIR = "statement/"; // mapped from def/statement/ via pom.xml
+  private static final String STATEMENT_DIR =
+      "statement/"; // mapped from def/statement/ via pom.xml
 
   /**
-   * ITIP Layer-2 base archetypes. Every ITIP framework archetype (including the
-   * HTTP protocol
-   * archetypes below) inherits one of these rather than a GSM base directly, so
-   * they must be
-   * registered first. {@code ItipAscription} is the rootless facet the seven
-   * bases compose.
+   * ITIP Layer-2 base archetypes. Every ITIP framework archetype (including the HTTP protocol
+   * archetypes below) inherits one of these rather than a GSM base directly, so they must be
+   * registered first. {@code ItipAscription} is the rootless facet the seven bases compose.
    */
-  private static final List<ProtocolArchetype> ITIP_BASE_ARCHETYPES = List.of(
-      new ProtocolArchetype("ItipAscription", "itip/base/Ascription.archetype.json"),
-      new ProtocolArchetype("ItipStructure", "itip/base/Structure.archetype.json"),
-      new ProtocolArchetype("ItipMechanism", "itip/base/Mechanism.archetype.json"),
-      new ProtocolArchetype("ItipEffector", "itip/base/Effector.archetype.json"),
-      new ProtocolArchetype("ItipReceptor", "itip/base/Receptor.archetype.json"),
-      new ProtocolArchetype("ItipInteraction", "itip/base/Interaction.archetype.json"),
-      new ProtocolArchetype("ItipDirective", "itip/base/Directive.archetype.json"),
-      new ProtocolArchetype("ItipNorm", "itip/base/Norm.archetype.json"));
+  private static final List<ProtocolArchetype> ITIP_BASE_ARCHETYPES =
+      List.of(
+          new ProtocolArchetype("ItipAscription", "itip/base/Ascription.archetype.json"),
+          new ProtocolArchetype("ItipStructure", "itip/base/Structure.archetype.json"),
+          new ProtocolArchetype("ItipMechanism", "itip/base/Mechanism.archetype.json"),
+          new ProtocolArchetype("ItipEffector", "itip/base/Effector.archetype.json"),
+          new ProtocolArchetype("ItipReceptor", "itip/base/Receptor.archetype.json"),
+          new ProtocolArchetype("ItipInteraction", "itip/base/Interaction.archetype.json"),
+          new ProtocolArchetype("ItipDirective", "itip/base/Directive.archetype.json"),
+          new ProtocolArchetype("ItipNorm", "itip/base/Norm.archetype.json"));
 
-  private static final List<ProtocolArchetype> PROTOCOL_ARCHETYPES = List.of(
-      new ProtocolArchetype("HttpRequest", "protocol/http/HttpRequest.archetype.json"),
-      new ProtocolArchetype("HttpResponse", "protocol/http/HttpResponse.archetype.json"),
-      new ProtocolArchetype(
-          "HttpRequestEffector", "protocol/http/HttpRequestEffector.archetype.json"),
-      new ProtocolArchetype(
-          "HttpResponseEffector", "protocol/http/HttpResponseEffector.archetype.json"),
-      new ProtocolArchetype(
-          "HttpRequestReceptor", "protocol/http/HttpRequestReceptor.archetype.json"),
-      new ProtocolArchetype(
-          "HttpResponseReceptor", "protocol/http/HttpResponseReceptor.archetype.json"),
-      new ProtocolArchetype(
-          "HttpRequestInteraction", "protocol/http/HttpRequestInteraction.archetype.json"),
-      new ProtocolArchetype(
-          "HttpResponseInteraction", "protocol/http/HttpResponseInteraction.archetype.json"),
-      new ProtocolArchetype("RelaySignal", "protocol/relay/RelaySignal.schema.json"),
-      new ProtocolArchetype("RelayEffector", "protocol/relay/RelayEffector.schema.json"),
-      new ProtocolArchetype("RelayReceptor", "protocol/relay/RelayReceptor.schema.json"),
-      new ProtocolArchetype("RelayInteraction", "protocol/relay/RelayInteraction.schema.json"));
+  private static final List<ProtocolArchetype> PROTOCOL_ARCHETYPES =
+      List.of(
+          new ProtocolArchetype("HttpRequest", "protocol/http/HttpRequest.archetype.json"),
+          new ProtocolArchetype("HttpResponse", "protocol/http/HttpResponse.archetype.json"),
+          new ProtocolArchetype(
+              "HttpRequestEffector", "protocol/http/HttpRequestEffector.archetype.json"),
+          new ProtocolArchetype(
+              "HttpResponseEffector", "protocol/http/HttpResponseEffector.archetype.json"),
+          new ProtocolArchetype(
+              "HttpRequestReceptor", "protocol/http/HttpRequestReceptor.archetype.json"),
+          new ProtocolArchetype(
+              "HttpResponseReceptor", "protocol/http/HttpResponseReceptor.archetype.json"),
+          new ProtocolArchetype(
+              "HttpRequestInteraction", "protocol/http/HttpRequestInteraction.archetype.json"),
+          new ProtocolArchetype(
+              "HttpResponseInteraction", "protocol/http/HttpResponseInteraction.archetype.json"),
+          new ProtocolArchetype("RelaySignal", "protocol/relay/RelaySignal.schema.json"),
+          new ProtocolArchetype("RelayEffector", "protocol/relay/RelayEffector.schema.json"),
+          new ProtocolArchetype("RelayReceptor", "protocol/relay/RelayReceptor.schema.json"),
+          new ProtocolArchetype("RelayInteraction", "protocol/relay/RelayInteraction.schema.json"));
 
   private final DefinitionManagerClient client;
 
@@ -89,17 +87,19 @@ public class StructureSeedRunner implements ApplicationRunner {
     UUID effectorArchetypeId = resolveBaseArchetypeId("Effector");
 
     // 1. Register custom archetypes (OperationRequest, OperationResponse)
-    UUID operationRequestArchId = ensureAscription(
-        "ARCHETYPE",
-        Map.of("title", "OperationRequest"),
-        baseArchetypeId,
-        "OperationRequest.schema.json");
+    UUID operationRequestArchId =
+        ensureAscription(
+            "ARCHETYPE",
+            Map.of("title", "OperationRequest"),
+            baseArchetypeId,
+            "OperationRequest.schema.json");
 
-    UUID operationResponseArchId = ensureAscription(
-        "ARCHETYPE",
-        Map.of("title", "OperationResponse"),
-        baseArchetypeId,
-        "OperationResponse.schema.json");
+    UUID operationResponseArchId =
+        ensureAscription(
+            "ARCHETYPE",
+            Map.of("title", "OperationResponse"),
+            baseArchetypeId,
+            "OperationResponse.schema.json");
 
     // 1b. Register the ITIP Layer-2 bases, then the protocol archetypes (HTTP,
     // Relay)
@@ -107,20 +107,23 @@ public class StructureSeedRunner implements ApplicationRunner {
     registerArchetypes("protocol", PROTOCOL_ARCHETYPES, baseArchetypeId);
 
     // 2. Register Structure
-    UUID structureAscId = ensureAscription(
-        "STRUCTURE",
-        Map.of("purpose", "sie-operator"),
-        structureArchetypeId,
-        "OperatorStructure.json");
+    UUID structureAscId =
+        ensureAscription(
+            "STRUCTURE",
+            Map.of("purpose", "sie-operator"),
+            structureArchetypeId,
+            "OperatorStructure.json");
 
     // 3. Register Mechanism (resolve structure reference in statement)
     UUID mechanismAscId = ensureMechanism(mechanismArchetypeId, structureAscId);
 
     // 4. Register Receptor on the mechanism
-    UUID receptorAscId = ensurePort("RECEPTOR", receptorArchetypeId, mechanismAscId, operationRequestArchId);
+    UUID receptorAscId =
+        ensurePort("RECEPTOR", receptorArchetypeId, mechanismAscId, operationRequestArchId);
 
     // 5. Register Effector on the mechanism
-    UUID effectorAscId = ensurePort("EFFECTOR", effectorArchetypeId, mechanismAscId, operationResponseArchId);
+    UUID effectorAscId =
+        ensurePort("EFFECTOR", effectorArchetypeId, mechanismAscId, operationResponseArchId);
 
     log.info(
         "SIE Operator identity registered — structure={}, mechanism={}, receptor={}, effector={}",
@@ -162,7 +165,8 @@ public class StructureSeedRunner implements ApplicationRunner {
   }
 
   private UUID ensureMechanism(UUID mechanismArchetypeId, UUID structureAscId) {
-    Optional<JsonNode> existing = client.findAscription("MECHANISM", Map.of("function", "run-operation"));
+    Optional<JsonNode> existing =
+        client.findAscription("MECHANISM", Map.of("function", "run-operation"));
     if (existing.isPresent()) {
       UUID id = extractId(existing.get());
       log.debug("Found existing MECHANISM ascription: {}", id);
@@ -180,17 +184,19 @@ public class StructureSeedRunner implements ApplicationRunner {
 
   private UUID ensurePort(
       String portType, UUID portArchetypeId, UUID mechanismAscId, UUID dataArchetypeAscId) {
-    Optional<JsonNode> existing = client.findAscription(portType, Map.of("mechanism", mechanismAscId.toString()));
+    Optional<JsonNode> existing =
+        client.findAscription(portType, Map.of("mechanism", mechanismAscId.toString()));
     if (existing.isPresent()) {
       UUID id = extractId(existing.get());
       log.debug("Found existing {} ascription: {}", portType, id);
       return id;
     }
 
-    ObjectNode statement = MAPPER
-        .createObjectNode()
-        .put("mechanism", mechanismAscId.toString())
-        .put("archetype", dataArchetypeAscId.toString());
+    ObjectNode statement =
+        MAPPER
+            .createObjectNode()
+            .put("mechanism", mechanismAscId.toString())
+            .put("archetype", dataArchetypeAscId.toString());
     JsonNode created = client.createAscription(portArchetypeId, statement);
     UUID id = extractId(created);
     log.info("Created {} ascription: {}", portType, id);
@@ -219,6 +225,5 @@ public class StructureSeedRunner implements ApplicationRunner {
     log.info("Registered {} {} archetypes", archetypes.size(), label);
   }
 
-  private record ProtocolArchetype(String title, String schemaFile) {
-  }
+  private record ProtocolArchetype(String title, String schemaFile) {}
 }
