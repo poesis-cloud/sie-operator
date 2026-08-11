@@ -126,14 +126,14 @@
         and registered first.
       -->
       <resource>
-        <directory>../../gsm-frameworks/frameworks/base</directory>
+        <directory>../../gsm/gsm-frameworks/frameworks/base</directory>
         <targetPath>statement/base</targetPath>
         <includes>
           <include>*.archetype.json</include>
         </includes>
       </resource>
       <resource>
-        <directory>../../gsm-frameworks/frameworks/http</directory>
+        <directory>../../gsm/gsm-frameworks/frameworks/http</directory>
         <targetPath>statement/protocol/http</targetPath>
         <includes>
           <include>*.archetype.json</include>

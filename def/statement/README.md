@@ -40,12 +40,12 @@ Each protocol defines a family of archetypes following the **Archetype Quad** pa
 
 ### Implemented (ITIP-owned, vendored to operator)
 
-| Protocol                                                                         | Boundary           | Description                                  |
-| -------------------------------------------------------------------------------- | ------------------ | -------------------------------------------- |
-| [`gsm-frameworks/frameworks/http/`](../../../../gsm-frameworks/frameworks/http/) | Network (external) | HTTP request/response dispatch via WebClient |
+| Protocol                                                                             | Boundary           | Description                                  |
+| ------------------------------------------------------------------------------------ | ------------------ | -------------------------------------------- |
+| [`gsm-frameworks/frameworks/http/`](../../../../gsm/gsm-frameworks/frameworks/http/) | Network (external) | HTTP request/response dispatch via WebClient |
 
 The HTTP archetypes inherit the **framework base Archetypes** (`gsmarc://gsm-frameworks/Framework{SubjectType}/v1`), so
-[`gsm-frameworks/frameworks/base/`](../../../../gsm-frameworks/frameworks/base/) is
+[`gsm-frameworks/frameworks/base/`](../../../../gsm/gsm-frameworks/frameworks/base/) is
 vendored alongside them under `statement/base/` and registered first by `StructureSeedRunner`.
 
 ### Reserved (ITIP-owned, not yet implemented)
