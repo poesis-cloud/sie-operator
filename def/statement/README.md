@@ -29,7 +29,7 @@ Each protocol defines a family of archetypes following the **Archetype Quad** pa
 ### Ownership split
 
 - **Operator-internal** (this repo, `protocol/`): protocols intrinsic to the Operator runtime — in-process causal propagation and DM ↔ Operator governance event exchange. `$id` scheme: `gsmarc://ops/protocols/{family}/{Title}/v1`.
-- **Application protocols** (ITIP, `gsm-frameworks/frameworks/{family}/`): protocols by which sourced applications interact with the world (HTTP, Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket). `$id` scheme: `gsmarc://gsm-frameworks/{family}/{Title}/v1`. The Operator vendors HTTP at build time via a Maven `<resource>` directive (see `pom.xml`).
+- **Application protocols** (ITIP, `gsm-ontology/ontologies/{family}/`): protocols by which sourced applications interact with the world (HTTP, Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket). `$id` scheme: `gsmarc://gsm-ontology/{family}/{Title}/v1`. The Operator vendors HTTP at build time via a Maven `<resource>` directive (see `pom.xml`).
 
 ### Implemented (operator-internal)
 
@@ -40,14 +40,14 @@ Each protocol defines a family of archetypes following the **Archetype Quad** pa
 
 ### Implemented (ITIP-owned, vendored to operator)
 
-| Protocol                                                                             | Boundary           | Description                                  |
-| ------------------------------------------------------------------------------------ | ------------------ | -------------------------------------------- |
-| [`gsm-frameworks/frameworks/http/`](../../../../gsm/gsm-frameworks/frameworks/http/) | Network (external) | HTTP request/response dispatch via WebClient |
+| Protocol                                                                         | Boundary           | Description                                  |
+| -------------------------------------------------------------------------------- | ------------------ | -------------------------------------------- |
+| [`gsm-ontology/ontologies/http/`](../../../../gsm/gsm-ontology/ontologies/http/) | Network (external) | HTTP request/response dispatch via WebClient |
 
-The HTTP archetypes inherit the **framework base Archetypes** (`gsmarc://gsm-frameworks/Framework{SubjectType}/v1`), so
-[`gsm-frameworks/frameworks/base/`](../../../../gsm/gsm-frameworks/frameworks/base/) is
+The HTTP archetypes inherit the **framework base Archetypes** (`gsmarc://gsm-ontology/Framework{SubjectType}/v1`), so
+[`gsm-ontology/ontologies/base/`](../../../../gsm/gsm-ontology/ontologies/base/) is
 vendored alongside them under `statement/base/` and registered first by `StructureSeedRunner`.
 
 ### Reserved (ITIP-owned, not yet implemented)
 
-Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket — archetype quads to be authored under `gsm-frameworks/frameworks/{family}/` when first sourced.
+Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket — archetype quads to be authored under `gsm-ontology/ontologies/{family}/` when first sourced.

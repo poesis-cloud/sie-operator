@@ -64,10 +64,15 @@ public class MechanismRelayEffectorExecutionService implements MechanismEffector
       return dispatch(effect);
     }
 
-    Optional<EffectorAscriptionDto> effector = frame.findEffectorByArchetypeName(effectorArchetype);
+    Optional<EffectorAscriptionDto> effector =
+        frame.findEffector(effect.archetype(), effectorArchetype);
     if (effector.isEmpty()) {
-      log.debug("No effector in frame for archetype {} — passthrough", effectorArchetype);
-      return dispatch(effect);
+      throw new IllegalStateException(
+          "No effector for data Archetype '"
+              + effect.archetype()
+              + "' and port Archetype '"
+              + effectorArchetype
+              + "'");
     }
 
     List<InteractionAscriptionDto> interactions =
@@ -75,6 +80,10 @@ public class MechanismRelayEffectorExecutionService implements MechanismEffector
     if (interactions.isEmpty()) {
       log.debug("No interactions for effector {} — passthrough", effector.get().id());
       return dispatch(effect);
+    }
+    if (interactions.size() > 1) {
+      throw new IllegalStateException(
+          "Effector " + effector.get().id() + " has multiple active Interactions");
     }
 
     InteractionAscriptionDto interaction = interactions.getFirst();

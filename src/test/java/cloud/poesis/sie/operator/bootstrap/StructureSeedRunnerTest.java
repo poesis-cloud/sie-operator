@@ -28,12 +28,15 @@ class StructureSeedRunnerTest {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  // Base archetype IDs
-  private static final UUID BASE_ARCHETYPE_ID = UUID.randomUUID();
-  private static final UUID STRUCTURE_ARCHETYPE_ID = UUID.randomUUID();
-  private static final UUID MECHANISM_ARCHETYPE_ID = UUID.randomUUID();
-  private static final UUID RECEPTOR_ARCHETYPE_ID = UUID.randomUUID();
-  private static final UUID EFFECTOR_ARCHETYPE_ID = UUID.randomUUID();
+  // Base archetype URIs (typing references are Archetype URIs, not UUIDs)
+  private static final String BASE_ARCHETYPE_URI = "gsmarc://gsm/Archetype/v1";
+  private static final String STRUCTURE_ARCHETYPE_URI = "gsmarc://gsm/Structure/v1";
+  private static final String MECHANISM_ARCHETYPE_URI = "gsmarc://gsm/Mechanism/v1";
+  private static final String RECEPTOR_ARCHETYPE_URI = "gsmarc://gsm/Receptor/v1";
+  private static final String EFFECTOR_ARCHETYPE_URI = "gsmarc://gsm/Effector/v1";
+
+  private static final String OP_REQUEST_ARCH_URI = "gsmarc://sie/OperationRequest/v1";
+  private static final String OP_RESPONSE_ARCH_URI = "gsmarc://sie/OperationResponse/v1";
 
   // Created ascription IDs
   private static final UUID OP_REQUEST_ARCH_ID = UUID.randomUUID();
@@ -45,22 +48,14 @@ class StructureSeedRunnerTest {
 
   private static final List<String> PROTOCOL_ARCHETYPE_TITLES =
       List.of(
-          "FrameworkAscription",
-          "FrameworkStructure",
-          "FrameworkMechanism",
-          "FrameworkEffector",
-          "FrameworkReceptor",
-          "FrameworkInteraction",
-          "FrameworkDirective",
-          "FrameworkNorm",
-          "HttpRequest",
-          "HttpResponse",
-          "HttpRequestEffector",
-          "HttpResponseEffector",
-          "HttpRequestReceptor",
-          "HttpResponseReceptor",
-          "HttpRequestInteraction",
-          "HttpResponseInteraction",
+          "Request",
+          "Response",
+          "RequestEffector",
+          "ResponseEffector",
+          "RequestReceptor",
+          "ResponseReceptor",
+          "RequestInteraction",
+          "ResponseInteraction",
           "RelaySignal",
           "RelayEffector",
           "RelayReceptor",
@@ -78,11 +73,11 @@ class StructureSeedRunnerTest {
   @Test
   void registersAllAscriptionsOnCleanStartup() throws Exception {
     // Resolve base archetypes
-    stubBaseArchetype("Archetype", BASE_ARCHETYPE_ID);
-    stubBaseArchetype("Structure", STRUCTURE_ARCHETYPE_ID);
-    stubBaseArchetype("Mechanism", MECHANISM_ARCHETYPE_ID);
-    stubBaseArchetype("Receptor", RECEPTOR_ARCHETYPE_ID);
-    stubBaseArchetype("Effector", EFFECTOR_ARCHETYPE_ID);
+    stubBaseArchetype("Archetype", BASE_ARCHETYPE_URI);
+    stubBaseArchetype("Structure", STRUCTURE_ARCHETYPE_URI);
+    stubBaseArchetype("Mechanism", MECHANISM_ARCHETYPE_URI);
+    stubBaseArchetype("Receptor", RECEPTOR_ARCHETYPE_URI);
+    stubBaseArchetype("Effector", EFFECTOR_ARCHETYPE_URI);
 
     // Nothing exists yet
     when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationRequest"))))
@@ -97,42 +92,42 @@ class StructureSeedRunnerTest {
     when(client.findAscription(eq("RECEPTOR"), any())).thenReturn(Optional.empty());
     when(client.findAscription(eq("EFFECTOR"), any())).thenReturn(Optional.empty());
 
-    // Creations return IDs (2 custom + 8 framework base + 12 protocol archetypes)
-    when(client.createAscription(eq(BASE_ARCHETYPE_ID), any()))
-        .thenAnswer(invocation -> ascriptionNode(UUID.randomUUID()));
-    when(client.createAscription(eq(STRUCTURE_ARCHETYPE_ID), any()))
+    // Creations return IDs (2 custom + 12 protocol archetypes)
+    when(client.createAscription(eq(BASE_ARCHETYPE_URI), any()))
+        .thenAnswer(invocation -> archetypeNode(UUID.randomUUID(), "gsmarc://sie/Created/v1"));
+    when(client.createAscription(eq(STRUCTURE_ARCHETYPE_URI), any()))
         .thenReturn(ascriptionNode(STRUCTURE_ASC_ID));
-    when(client.createAscription(eq(MECHANISM_ARCHETYPE_ID), any()))
+    when(client.createAscription(eq(MECHANISM_ARCHETYPE_URI), any()))
         .thenReturn(ascriptionNode(MECHANISM_ASC_ID));
-    when(client.createAscription(eq(RECEPTOR_ARCHETYPE_ID), any()))
+    when(client.createAscription(eq(RECEPTOR_ARCHETYPE_URI), any()))
         .thenReturn(ascriptionNode(RECEPTOR_ASC_ID));
-    when(client.createAscription(eq(EFFECTOR_ARCHETYPE_ID), any()))
+    when(client.createAscription(eq(EFFECTOR_ARCHETYPE_URI), any()))
         .thenReturn(ascriptionNode(EFFECTOR_ASC_ID));
 
     service.run(null);
 
     // 2 custom + 12 protocol = 14 ARCHETYPE ascriptions created
-    verify(client, times(22)).createAscription(eq(BASE_ARCHETYPE_ID), any());
-    verify(client).createAscription(eq(STRUCTURE_ARCHETYPE_ID), any());
-    verify(client).createAscription(eq(MECHANISM_ARCHETYPE_ID), any());
-    verify(client).createAscription(eq(RECEPTOR_ARCHETYPE_ID), any());
-    verify(client).createAscription(eq(EFFECTOR_ARCHETYPE_ID), any());
+    verify(client, times(14)).createAscription(eq(BASE_ARCHETYPE_URI), any());
+    verify(client).createAscription(eq(STRUCTURE_ARCHETYPE_URI), any());
+    verify(client).createAscription(eq(MECHANISM_ARCHETYPE_URI), any());
+    verify(client).createAscription(eq(RECEPTOR_ARCHETYPE_URI), any());
+    verify(client).createAscription(eq(EFFECTOR_ARCHETYPE_URI), any());
   }
 
   @Test
   void skipsCreationWhenAscriptionsAlreadyExist() throws Exception {
     // Resolve base archetypes
-    stubBaseArchetype("Archetype", BASE_ARCHETYPE_ID);
-    stubBaseArchetype("Structure", STRUCTURE_ARCHETYPE_ID);
-    stubBaseArchetype("Mechanism", MECHANISM_ARCHETYPE_ID);
-    stubBaseArchetype("Receptor", RECEPTOR_ARCHETYPE_ID);
-    stubBaseArchetype("Effector", EFFECTOR_ARCHETYPE_ID);
+    stubBaseArchetype("Archetype", BASE_ARCHETYPE_URI);
+    stubBaseArchetype("Structure", STRUCTURE_ARCHETYPE_URI);
+    stubBaseArchetype("Mechanism", MECHANISM_ARCHETYPE_URI);
+    stubBaseArchetype("Receptor", RECEPTOR_ARCHETYPE_URI);
+    stubBaseArchetype("Effector", EFFECTOR_ARCHETYPE_URI);
 
     // Everything already exists
     when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationRequest"))))
-        .thenReturn(Optional.of(ascriptionNode(OP_REQUEST_ARCH_ID)));
+        .thenReturn(Optional.of(archetypeNode(OP_REQUEST_ARCH_ID, OP_REQUEST_ARCH_URI)));
     when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationResponse"))))
-        .thenReturn(Optional.of(ascriptionNode(OP_RESPONSE_ARCH_ID)));
+        .thenReturn(Optional.of(archetypeNode(OP_RESPONSE_ARCH_ID, OP_RESPONSE_ARCH_URI)));
     stubProtocolArchetypesExist();
     when(client.findAscription(eq("STRUCTURE"), eq(Map.of("purpose", "sie-operator"))))
         .thenReturn(Optional.of(ascriptionNode(STRUCTURE_ASC_ID)));
@@ -162,16 +157,16 @@ class StructureSeedRunnerTest {
 
   @Test
   void mechanismStatementResolvesStructureReference() throws Exception {
-    stubBaseArchetype("Archetype", BASE_ARCHETYPE_ID);
-    stubBaseArchetype("Structure", STRUCTURE_ARCHETYPE_ID);
-    stubBaseArchetype("Mechanism", MECHANISM_ARCHETYPE_ID);
-    stubBaseArchetype("Receptor", RECEPTOR_ARCHETYPE_ID);
-    stubBaseArchetype("Effector", EFFECTOR_ARCHETYPE_ID);
+    stubBaseArchetype("Archetype", BASE_ARCHETYPE_URI);
+    stubBaseArchetype("Structure", STRUCTURE_ARCHETYPE_URI);
+    stubBaseArchetype("Mechanism", MECHANISM_ARCHETYPE_URI);
+    stubBaseArchetype("Receptor", RECEPTOR_ARCHETYPE_URI);
+    stubBaseArchetype("Effector", EFFECTOR_ARCHETYPE_URI);
 
     when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationRequest"))))
-        .thenReturn(Optional.of(ascriptionNode(OP_REQUEST_ARCH_ID)));
+        .thenReturn(Optional.of(archetypeNode(OP_REQUEST_ARCH_ID, OP_REQUEST_ARCH_URI)));
     when(client.findAscription(eq("ARCHETYPE"), eq(Map.of("title", "OperationResponse"))))
-        .thenReturn(Optional.of(ascriptionNode(OP_RESPONSE_ARCH_ID)));
+        .thenReturn(Optional.of(archetypeNode(OP_RESPONSE_ARCH_ID, OP_RESPONSE_ARCH_URI)));
     stubProtocolArchetypesExist();
     when(client.findAscription(eq("STRUCTURE"), eq(Map.of("purpose", "sie-operator"))))
         .thenReturn(Optional.of(ascriptionNode(STRUCTURE_ASC_ID)));
@@ -182,7 +177,7 @@ class StructureSeedRunnerTest {
     when(client.findAscription(eq("EFFECTOR"), any()))
         .thenReturn(Optional.of(ascriptionNode(EFFECTOR_ASC_ID)));
 
-    when(client.createAscription(eq(MECHANISM_ARCHETYPE_ID), any()))
+    when(client.createAscription(eq(MECHANISM_ARCHETYPE_URI), any()))
         .thenReturn(ascriptionNode(MECHANISM_ASC_ID));
 
     service.run(null);
@@ -190,7 +185,7 @@ class StructureSeedRunnerTest {
     // Verify the mechanism creation was called with the resolved structure ID
     ArgumentCaptor<com.fasterxml.jackson.databind.JsonNode> stmtCaptor =
         ArgumentCaptor.forClass(com.fasterxml.jackson.databind.JsonNode.class);
-    verify(client).createAscription(eq(MECHANISM_ARCHETYPE_ID), stmtCaptor.capture());
+    verify(client).createAscription(eq(MECHANISM_ARCHETYPE_URI), stmtCaptor.capture());
 
     com.fasterxml.jackson.databind.JsonNode capturedStmt = stmtCaptor.getValue();
     assertThat(capturedStmt.path("structure").asText()).isEqualTo(STRUCTURE_ASC_ID.toString());
@@ -200,9 +195,9 @@ class StructureSeedRunnerTest {
 
   // --- Helpers ---
 
-  private void stubBaseArchetype(String title, UUID id) {
+  private void stubBaseArchetype(String title, String uri) {
     when(client.findAscription("ARCHETYPE", Map.of("title", title)))
-        .thenReturn(Optional.of(ascriptionNode(id)));
+        .thenReturn(Optional.of(archetypeNode(UUID.randomUUID(), uri)));
   }
 
   private void stubProtocolArchetypesNotExist() {
@@ -224,6 +219,13 @@ class StructureSeedRunnerTest {
     node.put("id", id.toString());
     node.put("version", 1);
     node.put("status", "ACTIVE");
+    return node;
+  }
+
+  /** An Archetype Ascription carries its own URI in {@code statement.$id}. */
+  private static ObjectNode archetypeNode(UUID id, String uri) {
+    ObjectNode node = ascriptionNode(id);
+    node.putObject("statement").put("$id", uri);
     return node;
   }
 }

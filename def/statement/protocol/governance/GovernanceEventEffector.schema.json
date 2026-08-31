@@ -3,7 +3,7 @@
   "$ref": "gsmarc://gsm/Effector/v1",
   "$id": "gsmarc://ops/protocols/governance/GovernanceEventEffector/v1",
   "title": "GovernanceEventEffector",
-  "description": "Effector archetype for governance event emission. Typed by eventType (governance verb) and subjectRef (governance target). A governance event effector emits signals into the governance fabric — evaluation triggers, compliance assertions, or sourcing notifications. Source: ITIP Meta-Governance Framework; GSM Effector semantics.",
+  "description": "Effector archetype for governance event emission. Typed by eventType (governance verb) and subjectRef (governance target). A governance event effector emits signals into the governance fabric — evaluation triggers, compliance assertions, or sourcing notifications. Source: ITIP Meta-Governance Ontology; GSM Effector semantics.",
   "type": "object",
   "required": [
     "eventType",

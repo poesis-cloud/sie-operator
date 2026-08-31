@@ -38,7 +38,15 @@ public class OperationExecutionService {
       String ruleSource,
       Map<String, Object> operationInput,
       Function<EffectDto, Object> effectHandler) {
-    return execute(mechanismId, ruleSource, operationInput, effectHandler, Set.of(), Set.of());
+    return execute(
+        mechanismId,
+        ruleSource,
+        operationInput,
+        effectHandler,
+        Set.of(),
+        Set.of(),
+        Set.of(),
+        Set.of());
   }
 
   public ExecutionResult execute(
@@ -46,16 +54,20 @@ public class OperationExecutionService {
       String ruleSource,
       Map<String, Object> operationInput,
       Function<EffectDto, Object> effectHandler,
-      Set<String> validReceptorArchetypes,
-      Set<String> validEffectorArchetypes) {
+      Set<String> validReceptorDataArchetypes,
+      Set<String> validEffectorDataArchetypes,
+      Set<String> validReceptorPortArchetypes,
+      Set<String> validEffectorPortArchetypes) {
 
     RuleSandbox sandbox =
         sandboxFactory.create(
             mechanismId,
             operationInput,
             effectHandler,
-            validReceptorArchetypes,
-            validEffectorArchetypes);
+            validReceptorDataArchetypes,
+            validEffectorDataArchetypes,
+            validReceptorPortArchetypes,
+            validEffectorPortArchetypes);
 
     try (Mutability mu = Mutability.create("rule")) {
       StarlarkThread thread = new StarlarkThread(mu, StarlarkSemantics.DEFAULT);
@@ -107,8 +119,10 @@ public class OperationExecutionService {
         String mechanismId,
         Map<String, Object> operationInput,
         Function<EffectDto, Object> effectHandler,
-        Set<String> validReceptorArchetypes,
-        Set<String> validEffectorArchetypes);
+        Set<String> validReceptorDataArchetypes,
+        Set<String> validEffectorDataArchetypes,
+        Set<String> validReceptorPortArchetypes,
+        Set<String> validEffectorPortArchetypes);
   }
 
   public record RuleSandbox(Module module, Supplier<List<EffectDto>> complete) {}

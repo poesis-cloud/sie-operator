@@ -3,7 +3,7 @@
   "$ref": "gsmarc://gsm/Effector/v1",
   "$id": "gsmarc://ops/protocols/governance/GovernanceResultEffector/v1",
   "title": "GovernanceResultEffector",
-  "description": "Effector archetype for governance result emission. Typed by resultType (governance outcome verb). A governance result effector emits evaluation outcomes back into the governance fabric. Source: ITIP Meta-Governance Framework; GSM Effector semantics.",
+  "description": "Effector archetype for governance result emission. Typed by resultType (governance outcome verb). A governance result effector emits evaluation outcomes back into the governance fabric. Source: ITIP Meta-Governance Ontology; GSM Effector semantics.",
   "type": "object",
   "required": [
     "resultType"

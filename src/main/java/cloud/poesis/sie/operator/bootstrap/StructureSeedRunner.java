@@ -33,38 +33,20 @@ public class StructureSeedRunner implements ApplicationRunner {
   private static final String STATEMENT_DIR =
       "statement/"; // mapped from def/statement/ via pom.xml
 
-  /**
-   * ITIP Layer-2 base archetypes. Every ITIP framework archetype (including the HTTP protocol
-   * archetypes below) inherits one of these rather than a GSM base directly, so they must be
-   * registered first. {@code FrameworkAscription} is the rootless facet the seven bases compose.
-   */
-  private static final List<ProtocolArchetype> FRAMEWORK_BASE_ARCHETYPES =
-      List.of(
-          new ProtocolArchetype("FrameworkAscription", "base/Ascription.archetype.json"),
-          new ProtocolArchetype("FrameworkStructure", "base/Structure.archetype.json"),
-          new ProtocolArchetype("FrameworkMechanism", "base/Mechanism.archetype.json"),
-          new ProtocolArchetype("FrameworkEffector", "base/Effector.archetype.json"),
-          new ProtocolArchetype("FrameworkReceptor", "base/Receptor.archetype.json"),
-          new ProtocolArchetype("FrameworkInteraction", "base/Interaction.archetype.json"),
-          new ProtocolArchetype("FrameworkDirective", "base/Directive.archetype.json"),
-          new ProtocolArchetype("FrameworkNorm", "base/Norm.archetype.json"));
-
   private static final List<ProtocolArchetype> PROTOCOL_ARCHETYPES =
       List.of(
-          new ProtocolArchetype("HttpRequest", "protocol/http/HttpRequest.archetype.json"),
-          new ProtocolArchetype("HttpResponse", "protocol/http/HttpResponse.archetype.json"),
+          new ProtocolArchetype("Request", "protocol/http/Request.archetype.json"),
+          new ProtocolArchetype("Response", "protocol/http/Response.archetype.json"),
+          new ProtocolArchetype("RequestEffector", "protocol/http/RequestEffector.archetype.json"),
           new ProtocolArchetype(
-              "HttpRequestEffector", "protocol/http/HttpRequestEffector.archetype.json"),
+              "ResponseEffector", "protocol/http/ResponseEffector.archetype.json"),
+          new ProtocolArchetype("RequestReceptor", "protocol/http/RequestReceptor.archetype.json"),
           new ProtocolArchetype(
-              "HttpResponseEffector", "protocol/http/HttpResponseEffector.archetype.json"),
+              "ResponseReceptor", "protocol/http/ResponseReceptor.archetype.json"),
           new ProtocolArchetype(
-              "HttpRequestReceptor", "protocol/http/HttpRequestReceptor.archetype.json"),
+              "RequestInteraction", "protocol/http/RequestInteraction.archetype.json"),
           new ProtocolArchetype(
-              "HttpResponseReceptor", "protocol/http/HttpResponseReceptor.archetype.json"),
-          new ProtocolArchetype(
-              "HttpRequestInteraction", "protocol/http/HttpRequestInteraction.archetype.json"),
-          new ProtocolArchetype(
-              "HttpResponseInteraction", "protocol/http/HttpResponseInteraction.archetype.json"),
+              "ResponseInteraction", "protocol/http/ResponseInteraction.archetype.json"),
           new ProtocolArchetype("RelaySignal", "protocol/relay/RelaySignal.schema.json"),
           new ProtocolArchetype("RelayEffector", "protocol/relay/RelayEffector.schema.json"),
           new ProtocolArchetype("RelayReceptor", "protocol/relay/RelayReceptor.schema.json"),
@@ -80,50 +62,51 @@ public class StructureSeedRunner implements ApplicationRunner {
   public void run(ApplicationArguments args) {
     log.info("Bootstrapping SIE Operator identity on Definition Manager...");
 
-    UUID baseArchetypeId = resolveBaseArchetypeId("Archetype");
-    UUID structureArchetypeId = resolveBaseArchetypeId("Structure");
-    UUID mechanismArchetypeId = resolveBaseArchetypeId("Mechanism");
-    UUID receptorArchetypeId = resolveBaseArchetypeId("Receptor");
-    UUID effectorArchetypeId = resolveBaseArchetypeId("Effector");
+    String baseArchetypeUri = resolveBaseArchetypeUri("Archetype");
+    String structureArchetypeUri = resolveBaseArchetypeUri("Structure");
+    String mechanismArchetypeUri = resolveBaseArchetypeUri("Mechanism");
+    String receptorArchetypeUri = resolveBaseArchetypeUri("Receptor");
+    String effectorArchetypeUri = resolveBaseArchetypeUri("Effector");
 
     // 1. Register custom archetypes (OperationRequest, OperationResponse)
-    UUID operationRequestArchId =
-        ensureAscription(
-            "ARCHETYPE",
-            Map.of("title", "OperationRequest"),
-            baseArchetypeId,
-            "OperationRequest.schema.json");
+    String operationRequestArchUri =
+        extractUri(
+            ensureAscription(
+                "ARCHETYPE",
+                Map.of("title", "OperationRequest"),
+                baseArchetypeUri,
+                "OperationRequest.schema.json"));
 
-    UUID operationResponseArchId =
-        ensureAscription(
-            "ARCHETYPE",
-            Map.of("title", "OperationResponse"),
-            baseArchetypeId,
-            "OperationResponse.schema.json");
+    String operationResponseArchUri =
+        extractUri(
+            ensureAscription(
+                "ARCHETYPE",
+                Map.of("title", "OperationResponse"),
+                baseArchetypeUri,
+                "OperationResponse.schema.json"));
 
-    // 1b. Register the ITIP Layer-2 bases, then the protocol archetypes (HTTP,
-    // Relay)
-    registerArchetypes("framework base", FRAMEWORK_BASE_ARCHETYPES, baseArchetypeId);
-    registerArchetypes("protocol", PROTOCOL_ARCHETYPES, baseArchetypeId);
+    // 1b. Register protocol archetypes (HTTP, Relay).
+    registerArchetypes("protocol", PROTOCOL_ARCHETYPES, baseArchetypeUri);
 
     // 2. Register Structure
     UUID structureAscId =
-        ensureAscription(
-            "STRUCTURE",
-            Map.of("purpose", "sie-operator"),
-            structureArchetypeId,
-            "OperatorStructure.json");
+        extractId(
+            ensureAscription(
+                "STRUCTURE",
+                Map.of("purpose", "sie-operator"),
+                structureArchetypeUri,
+                "OperatorStructure.json"));
 
     // 3. Register Mechanism (resolve structure reference in statement)
-    UUID mechanismAscId = ensureMechanism(mechanismArchetypeId, structureAscId);
+    UUID mechanismAscId = ensureMechanism(mechanismArchetypeUri, structureAscId);
 
     // 4. Register Receptor on the mechanism
     UUID receptorAscId =
-        ensurePort("RECEPTOR", receptorArchetypeId, mechanismAscId, operationRequestArchId);
+        ensurePort("RECEPTOR", receptorArchetypeUri, mechanismAscId, operationRequestArchUri);
 
     // 5. Register Effector on the mechanism
     UUID effectorAscId =
-        ensurePort("EFFECTOR", effectorArchetypeId, mechanismAscId, operationResponseArchId);
+        ensurePort("EFFECTOR", effectorArchetypeUri, mechanismAscId, operationResponseArchUri);
 
     log.info(
         "SIE Operator identity registered — structure={}, mechanism={}, receptor={}, effector={}",
@@ -133,10 +116,10 @@ public class StructureSeedRunner implements ApplicationRunner {
         effectorAscId);
   }
 
-  private UUID resolveBaseArchetypeId(String title) {
+  private String resolveBaseArchetypeUri(String title) {
     Optional<JsonNode> existing = client.findAscription("ARCHETYPE", Map.of("title", title));
     if (existing.isPresent()) {
-      return extractId(existing.get());
+      return extractUri(existing.get());
     }
     throw new IllegalStateException(
         "Base archetype '"
@@ -145,26 +128,24 @@ public class StructureSeedRunner implements ApplicationRunner {
             + "ensure the Definition Manager is running and initialized");
   }
 
-  private UUID ensureAscription(
+  private JsonNode ensureAscription(
       String type,
       Map<String, String> identityFilters,
-      UUID archetypeId,
+      String archetypeUri,
       String statementFileName) {
     Optional<JsonNode> existing = client.findAscription(type, identityFilters);
     if (existing.isPresent()) {
-      UUID id = extractId(existing.get());
-      log.debug("Found existing {} ascription: {}", type, id);
-      return id;
+      log.debug("Found existing {} ascription: {}", type, extractId(existing.get()));
+      return existing.get();
     }
 
     JsonNode statement = loadStatement(statementFileName);
-    JsonNode created = client.createAscription(archetypeId, statement);
-    UUID id = extractId(created);
-    log.info("Created {} ascription: {}", type, id);
-    return id;
+    JsonNode created = client.createAscription(archetypeUri, statement);
+    log.info("Created {} ascription: {}", type, extractId(created));
+    return created;
   }
 
-  private UUID ensureMechanism(UUID mechanismArchetypeId, UUID structureAscId) {
+  private UUID ensureMechanism(String mechanismArchetypeUri, UUID structureAscId) {
     Optional<JsonNode> existing =
         client.findAscription("MECHANISM", Map.of("function", "run-operation"));
     if (existing.isPresent()) {
@@ -176,14 +157,14 @@ public class StructureSeedRunner implements ApplicationRunner {
     ObjectNode statement = (ObjectNode) loadStatement("OperatorMechanism.json");
     // Resolve template variable: replace ${sie.operator.structure.ascriptionId}
     statement.put("structure", structureAscId.toString());
-    JsonNode created = client.createAscription(mechanismArchetypeId, statement);
+    JsonNode created = client.createAscription(mechanismArchetypeUri, statement);
     UUID id = extractId(created);
     log.info("Created MECHANISM ascription: {}", id);
     return id;
   }
 
   private UUID ensurePort(
-      String portType, UUID portArchetypeId, UUID mechanismAscId, UUID dataArchetypeAscId) {
+      String portType, String portArchetypeUri, UUID mechanismAscId, String dataArchetypeUri) {
     Optional<JsonNode> existing =
         client.findAscription(portType, Map.of("mechanism", mechanismAscId.toString()));
     if (existing.isPresent()) {
@@ -196,8 +177,8 @@ public class StructureSeedRunner implements ApplicationRunner {
         MAPPER
             .createObjectNode()
             .put("mechanism", mechanismAscId.toString())
-            .put("archetype", dataArchetypeAscId.toString());
-    JsonNode created = client.createAscription(portArchetypeId, statement);
+            .put("archetype", dataArchetypeUri);
+    JsonNode created = client.createAscription(portArchetypeUri, statement);
     UUID id = extractId(created);
     log.info("Created {} ascription: {}", portType, id);
     return id;
@@ -216,11 +197,16 @@ public class StructureSeedRunner implements ApplicationRunner {
     return UUID.fromString(ascription.path("id").asText());
   }
 
+  /** An Archetype Ascription's own URI lives in its statement's {@code $id}. */
+  private String extractUri(JsonNode ascription) {
+    return ascription.path("statement").path("$id").asText();
+  }
+
   private void registerArchetypes(
-      String label, List<ProtocolArchetype> archetypes, UUID baseArchetypeId) {
+      String label, List<ProtocolArchetype> archetypes, String baseArchetypeUri) {
     for (ProtocolArchetype proto : archetypes) {
       ensureAscription(
-          "ARCHETYPE", Map.of("title", proto.title()), baseArchetypeId, proto.schemaFile());
+          "ARCHETYPE", Map.of("title", proto.title()), baseArchetypeUri, proto.schemaFile());
     }
     log.info("Registered {} {} archetypes", archetypes.size(), label);
   }

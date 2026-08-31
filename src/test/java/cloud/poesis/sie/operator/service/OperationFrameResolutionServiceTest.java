@@ -51,7 +51,12 @@ class OperationFrameResolutionServiceTest {
         .thenReturn(
             List.of(
                 new ReceptorAscriptionDto(
-                    OPERATOR_RECEPTOR_ID, "ACTIVE", 1, OPERATOR_MECHANISM_ID, UUID.randomUUID())));
+                    OPERATOR_RECEPTOR_ID,
+                    "ACTIVE",
+                    1,
+                    "gsmarc://gsm/Receptor/v1",
+                    OPERATOR_MECHANISM_ID,
+                    archetypeId("OperationRequest"))));
   }
 
   @Test
@@ -74,6 +79,8 @@ class OperationFrameResolutionServiceTest {
     UUID mechAscId = UUID.randomUUID();
     UUID triggerArchAscId = UUID.randomUUID();
     UUID findingArchAscId = UUID.randomUUID();
+    String triggerArchetypeId = archetypeId("AppraisalTrigger");
+    String findingArchetypeId = archetypeId("AppraisalFinding");
 
     MechanismAscriptionDto mechanism =
         mechanismAscription(mechAscId, "evt = sys.receive(\"Trigger\")");
@@ -81,12 +88,14 @@ class OperationFrameResolutionServiceTest {
 
     UUID receptorId = UUID.randomUUID();
     ReceptorAscriptionDto receptor =
-        new ReceptorAscriptionDto(receptorId, "ACTIVE", 1, mechAscId, triggerArchAscId);
+        new ReceptorAscriptionDto(
+            receptorId, "ACTIVE", 1, "gsmarc://gsm/Receptor/v1", mechAscId, triggerArchetypeId);
     when(client.findReceptors(mechAscId)).thenReturn(List.of(receptor));
 
     UUID effectorId = UUID.randomUUID();
     EffectorAscriptionDto effector =
-        new EffectorAscriptionDto(effectorId, "ACTIVE", 1, mechAscId, findingArchAscId);
+        new EffectorAscriptionDto(
+            effectorId, "ACTIVE", 1, "gsmarc://gsm/Effector/v1", mechAscId, findingArchetypeId);
     when(client.findEffectors(mechAscId)).thenReturn(List.of(effector));
 
     // Wire the effector to the operator's receptor
@@ -96,12 +105,12 @@ class OperationFrameResolutionServiceTest {
     when(client.findActiveInteractionsForEffector(effectorId)).thenReturn(List.of(wiring));
 
     ArchetypeAscriptionDto triggerArchetype =
-        archetypeAscription(triggerArchAscId, "AppraisalTrigger");
-    when(client.getArchetypeAscription(triggerArchAscId)).thenReturn(triggerArchetype);
+        archetypeAscription(triggerArchAscId, triggerArchetypeId, "AppraisalTrigger");
+    when(client.getArchetypeAscription(triggerArchetypeId)).thenReturn(triggerArchetype);
 
     ArchetypeAscriptionDto findingArchetype =
-        archetypeAscription(findingArchAscId, "AppraisalFinding");
-    when(client.getArchetypeAscription(findingArchAscId)).thenReturn(findingArchetype);
+        archetypeAscription(findingArchAscId, findingArchetypeId, "AppraisalFinding");
+    when(client.getArchetypeAscription(findingArchetypeId)).thenReturn(findingArchetype);
 
     OperationFrameDto frame = resolver.resolve(mechAscId);
 
@@ -118,6 +127,45 @@ class OperationFrameResolutionServiceTest {
         .extracting(ArchetypeAscriptionDto::title)
         .isEqualTo("AppraisalFinding");
     assertThat(frame.archetypes()).containsKeys(triggerArchAscId, findingArchAscId);
+  }
+
+  @Test
+  void rejectsArchetypeWhoseUriDiffersFromRequestedUri() {
+    stubOperatorResolution();
+    UUID mechAscId = UUID.randomUUID();
+    String requestedId = archetypeId("Requested");
+    String returnedId = archetypeId("Returned");
+    when(client.getMechanismAscription(mechAscId))
+        .thenReturn(mechanismAscription(mechAscId, "rule"));
+    when(client.findReceptors(mechAscId))
+        .thenReturn(
+            List.of(
+                new ReceptorAscriptionDto(
+                    UUID.randomUUID(),
+                    "ACTIVE",
+                    1,
+                    "gsmarc://gsm/Receptor/v1",
+                    mechAscId,
+                    requestedId)));
+
+    UUID effectorId = UUID.randomUUID();
+    when(client.findEffectors(mechAscId))
+        .thenReturn(
+            List.of(
+                new EffectorAscriptionDto(
+                    effectorId, "ACTIVE", 1, "gsmarc://gsm/Effector/v1", mechAscId, requestedId)));
+    when(client.findActiveInteractionsForEffector(effectorId))
+        .thenReturn(
+            List.of(
+                new InteractionAscriptionDto(
+                    UUID.randomUUID(), "ACTIVE", 1, effectorId, OPERATOR_RECEPTOR_ID)));
+    when(client.getArchetypeAscription(requestedId))
+        .thenReturn(archetypeAscription(UUID.randomUUID(), returnedId, "Returned"));
+
+    assertThatThrownBy(() -> resolver.resolve(mechAscId))
+        .isInstanceOf(OperationFrameResolutionException.class)
+        .hasMessageContaining(requestedId)
+        .hasMessageContaining(returnedId);
   }
 
   @Test
@@ -154,8 +202,10 @@ class OperationFrameResolutionServiceTest {
     when(client.findReceptors(mechAscId)).thenReturn(Collections.emptyList());
 
     UUID effectorId = UUID.randomUUID();
+    String archetypeUri = archetypeId("SomeArchetype");
     EffectorAscriptionDto effector =
-        new EffectorAscriptionDto(effectorId, "ACTIVE", 1, mechAscId, archAscId);
+        new EffectorAscriptionDto(
+            effectorId, "ACTIVE", 1, "gsmarc://gsm/Effector/v1", mechAscId, archetypeUri);
     when(client.findEffectors(mechAscId)).thenReturn(List.of(effector));
 
     InteractionAscriptionDto wiring =
@@ -163,8 +213,9 @@ class OperationFrameResolutionServiceTest {
             UUID.randomUUID(), "ACTIVE", 1, effectorId, OPERATOR_RECEPTOR_ID);
     when(client.findActiveInteractionsForEffector(effectorId)).thenReturn(List.of(wiring));
 
-    ArchetypeAscriptionDto archetype = archetypeAscription(archAscId, "SomeArchetype");
-    when(client.getArchetypeAscription(archAscId)).thenReturn(archetype);
+    ArchetypeAscriptionDto archetype =
+        archetypeAscription(archAscId, archetypeUri, "SomeArchetype");
+    when(client.getArchetypeAscription(archetypeUri)).thenReturn(archetype);
 
     OperationFrameDto frame = resolver.resolve(mechAscId);
 
@@ -181,7 +232,8 @@ class OperationFrameResolutionServiceTest {
 
     UUID effectorId = UUID.randomUUID();
     EffectorAscriptionDto effector =
-        new EffectorAscriptionDto(effectorId, "ACTIVE", 1, mechAscId, UUID.randomUUID());
+        new EffectorAscriptionDto(
+            effectorId, "ACTIVE", 1, "gsmarc://gsm/Effector/v1", mechAscId, archetypeId("Unused"));
     when(client.findEffectors(mechAscId)).thenReturn(List.of(effector));
 
     // Interaction points to a different receptor, not the operator's
@@ -195,19 +247,32 @@ class OperationFrameResolutionServiceTest {
   }
 
   @Test
-  void findsReceptorAndEffectorByArchetypeName() {
+  void findsReceptorAndEffectorByExactArchetypeId() {
     UUID mechAscId = UUID.randomUUID();
-    ObjectNode schema = MAPPER.createObjectNode().put("type", "object");
+    String triggerArchetypeId = archetypeId("AppraisalTrigger");
+    String findingArchetypeId = "gsmarc://other/AppraisalFinding/v1";
 
     ArchetypeAscriptionDto triggerArchetype =
-        new ArchetypeAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, "AppraisalTrigger", schema);
+        archetypeAscription(UUID.randomUUID(), triggerArchetypeId, "SharedTitle");
     ArchetypeAscriptionDto findingArchetype =
-        new ArchetypeAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, "AppraisalFinding", schema);
+        archetypeAscription(UUID.randomUUID(), findingArchetypeId, "SharedTitle");
 
     ReceptorAscriptionDto receptor =
-        new ReceptorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechAscId, triggerArchetype.id());
+        new ReceptorAscriptionDto(
+            UUID.randomUUID(),
+            "ACTIVE",
+            1,
+            "gsmarc://tenant/TriggerPort/v1",
+            mechAscId,
+            triggerArchetypeId);
     EffectorAscriptionDto effector =
-        new EffectorAscriptionDto(UUID.randomUUID(), "ACTIVE", 1, mechAscId, findingArchetype.id());
+        new EffectorAscriptionDto(
+            UUID.randomUUID(),
+            "ACTIVE",
+            1,
+            "gsmarc://tenant/FindingPort/v1",
+            mechAscId,
+            findingArchetypeId);
 
     MechanismAscriptionDto mechanism = mechanismAscription(mechAscId, "rule");
 
@@ -219,12 +284,14 @@ class OperationFrameResolutionServiceTest {
             Map.of(
                 triggerArchetype.id(), triggerArchetype, findingArchetype.id(), findingArchetype));
 
-    assertThat(frame.findReceptorByArchetypeName("AppraisalTrigger")).isPresent();
-    assertThat(frame.findReceptorByArchetypeName("NonExistent")).isEmpty();
-    assertThat(frame.findEffectorByArchetypeName("AppraisalFinding")).isPresent();
-    assertThat(frame.findEffectorByArchetypeName("NonExistent")).isEmpty();
-    assertThat(frame.findSchema("AppraisalTrigger")).isPresent();
-    assertThat(frame.findSchema("NonExistent")).isEmpty();
+    assertThat(frame.findReceptorByArchetypeId(triggerArchetypeId)).isPresent();
+    assertThat(frame.findReceptorByArchetypeId("SharedTitle")).isEmpty();
+    assertThat(frame.findEffectorByArchetypeId(findingArchetypeId)).isPresent();
+    assertThat(frame.findEffectorByArchetypeId("SharedTitle")).isEmpty();
+    assertThat(frame.findReceptorByPortArchetypeId("gsmarc://tenant/TriggerPort/v1")).isPresent();
+    assertThat(frame.findEffectorByPortArchetypeId("gsmarc://tenant/FindingPort/v1")).isPresent();
+    assertThat(frame.findSchema(triggerArchetypeId)).isPresent();
+    assertThat(frame.findSchema("SharedTitle")).isEmpty();
   }
 
   // --- Helpers ---
@@ -233,8 +300,13 @@ class OperationFrameResolutionServiceTest {
     return new MechanismAscriptionDto(id, "ACTIVE", 1, UUID.randomUUID(), "test", ruleSource);
   }
 
-  private ArchetypeAscriptionDto archetypeAscription(UUID id, String title) {
+  private static String archetypeId(String title) {
+    return "gsmarc://test/" + title + "/v1";
+  }
+
+  private ArchetypeAscriptionDto archetypeAscription(UUID id, String archetypeUri, String title) {
     ObjectNode schema = MAPPER.createObjectNode();
+    schema.put("$id", archetypeUri);
     schema.put("title", title);
     schema.put("type", "object");
     return new ArchetypeAscriptionDto(id, "ACTIVE", 1, title, schema);

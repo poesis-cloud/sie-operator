@@ -122,11 +122,20 @@ public class OperationFrameResolutionService {
     return receptors.getFirst().id();
   }
 
-  private void resolveArchetype(
-      UUID archetypeAscriptionId, Map<UUID, ArchetypeAscriptionDto> archetypes) {
-    if (!archetypes.containsKey(archetypeAscriptionId)) {
-      ArchetypeAscriptionDto archetype = client.getArchetypeAscription(archetypeAscriptionId);
-      archetypes.put(archetypeAscriptionId, archetype);
+  private void resolveArchetype(String archetypeUri, Map<UUID, ArchetypeAscriptionDto> archetypes) {
+    boolean alreadyResolved =
+        archetypes.values().stream().anyMatch(archetype -> archetypeUri.equals(archetype.uri()));
+    if (!alreadyResolved) {
+      ArchetypeAscriptionDto archetype = client.getArchetypeAscription(archetypeUri);
+      if (!archetypeUri.equals(archetype.uri())) {
+        throw new OperationFrameResolutionException(
+            "Archetype schema identity mismatch: requested '"
+                + archetypeUri
+                + "' but received '"
+                + archetype.uri()
+                + "'");
+      }
+      archetypes.put(archetype.id(), archetype);
     }
   }
 

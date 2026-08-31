@@ -1,29 +1,33 @@
 package cloud.poesis.sie.operator.dto;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Objects;
 import java.util.UUID;
 
 public record EffectorAscriptionDto(
-    UUID id, String status, int version, UUID mechanism, UUID archetype) {
+    UUID id,
+    String status,
+    int version,
+    String portArchetypeUri,
+    UUID mechanism,
+    String archetype) {
 
   public EffectorAscriptionDto {
     Objects.requireNonNull(id, "EffectorAscriptionDto: id is required");
     Objects.requireNonNull(status, "EffectorAscriptionDto: status is required");
+    if (portArchetypeUri == null || portArchetypeUri.isBlank()) {
+      throw new IllegalArgumentException("EffectorAscriptionDto: port Archetype URI is required");
+    }
     Objects.requireNonNull(
         mechanism, "EffectorAscriptionDto: statement field 'mechanism' is required");
-    Objects.requireNonNull(
-        archetype, "EffectorAscriptionDto: statement field 'archetype' is required");
+    if (archetype == null || archetype.isBlank()) {
+      throw new IllegalArgumentException(
+          "EffectorAscriptionDto: statement field 'archetype' is required");
+    }
   }
 
-  @JsonCreator
   public static EffectorAscriptionDto fromJson(
-      @JsonProperty("id") UUID id,
-      @JsonProperty("status") String status,
-      @JsonProperty("version") int version,
-      @JsonProperty("statement") JsonNode statement) {
+      UUID id, String status, int version, String portArchetypeUri, JsonNode statement) {
     Objects.requireNonNull(statement, "EffectorAscriptionDto: statement is required");
     String mechanismText = statement.path("mechanism").asText();
     if (mechanismText.isBlank()) {
@@ -36,6 +40,6 @@ public record EffectorAscriptionDto(
           "EffectorAscriptionDto: statement field 'archetype' is required");
     }
     return new EffectorAscriptionDto(
-        id, status, version, UUID.fromString(mechanismText), UUID.fromString(archetypeText));
+        id, status, version, portArchetypeUri, UUID.fromString(mechanismText), archetypeText);
   }
 }

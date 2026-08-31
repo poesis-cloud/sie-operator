@@ -46,6 +46,11 @@ public class OperationService {
       return OperationResponseDto.failure(e.getMessage());
     }
 
+    Optional<String> unresolvedSchema = findUnresolvedSchema(frame);
+    if (unresolvedSchema.isPresent()) {
+      return OperationResponseDto.failure(unresolvedSchema.get());
+    }
+
     String ruleSource = frame.getRuleSource();
     String mechanismId = frame.mechanism().id().toString();
 
@@ -73,7 +78,9 @@ public class OperationService {
             request.operationInput(),
             effect -> dispatchAndValidateReception(effect, frame),
             resolveReceptorArchetypeNames(frame),
-            resolveEffectorArchetypeNames(frame));
+            resolveEffectorArchetypeNames(frame),
+            resolveReceptorPortArchetypeIds(frame),
+            resolveEffectorPortArchetypeIds(frame));
 
     if (!result.success()) {
       log.warn("Mechanism {} execution failed: {}", mechanismId, result.error());
@@ -82,6 +89,20 @@ public class OperationService {
 
     log.debug("Mechanism {} produced {} effects", mechanismId, result.effects().size());
     return OperationResponseDto.success(result.effects());
+  }
+
+  private Optional<String> findUnresolvedSchema(OperationFrameDto frame) {
+    for (ReceptorAscriptionDto receptor : frame.receptors()) {
+      if (frame.findSchema(receptor.archetype()).isEmpty()) {
+        return Optional.of("Unresolved receptor schema: " + receptor.archetype());
+      }
+    }
+    for (cloud.poesis.sie.operator.dto.EffectorAscriptionDto effector : frame.effectors()) {
+      if (frame.findSchema(effector.archetype()).isEmpty()) {
+        return Optional.of("Unresolved effector schema: " + effector.archetype());
+      }
+    }
+    return Optional.empty();
   }
 
   private OperationInputValidationService.ValidationResult validateOperationInput(
@@ -97,7 +118,7 @@ public class OperationService {
       if (archetype.isPresent()) {
         OperationInputValidationService.ValidationResult result =
             inputValidator.validate(
-                archetype.get().title(), operationInput, archetype.get().schema());
+                archetype.get().uri(), operationInput, archetype.get().schema());
         if (result.isValid()) {
           return result;
         }
@@ -163,17 +184,25 @@ public class OperationService {
 
   private Set<String> resolveReceptorArchetypeNames(OperationFrameDto frame) {
     return frame.receptors().stream()
-        .map(r -> frame.findArchetype(r.archetype()))
-        .flatMap(Optional::stream)
-        .map(ArchetypeAscriptionDto::title)
+        .map(ReceptorAscriptionDto::archetype)
         .collect(Collectors.toUnmodifiableSet());
   }
 
   private Set<String> resolveEffectorArchetypeNames(OperationFrameDto frame) {
     return frame.effectors().stream()
-        .map(e -> frame.findArchetype(e.archetype()))
-        .flatMap(Optional::stream)
-        .map(ArchetypeAscriptionDto::title)
+        .map(cloud.poesis.sie.operator.dto.EffectorAscriptionDto::archetype)
+        .collect(Collectors.toUnmodifiableSet());
+  }
+
+  private Set<String> resolveReceptorPortArchetypeIds(OperationFrameDto frame) {
+    return frame.receptors().stream()
+        .map(ReceptorAscriptionDto::portArchetypeUri)
+        .collect(Collectors.toUnmodifiableSet());
+  }
+
+  private Set<String> resolveEffectorPortArchetypeIds(OperationFrameDto frame) {
+    return frame.effectors().stream()
+        .map(cloud.poesis.sie.operator.dto.EffectorAscriptionDto::portArchetypeUri)
         .collect(Collectors.toUnmodifiableSet());
   }
 }

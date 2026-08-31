@@ -29,7 +29,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MechanismRelayEffectorExecutionServiceTest {
 
-  private static final ObjectNode EMPTY_SCHEMA = new ObjectMapper().createObjectNode();
+  private static final ObjectNode EMPTY_SCHEMA =
+      new ObjectMapper()
+          .createObjectNode()
+          .put("$id", "gsmarc://test/RelaySignal/v1")
+          .put("type", "object");
 
   @Mock private DefinitionManagerClient client;
   @Mock private OperationService operationService;
@@ -107,15 +111,18 @@ class MechanismRelayEffectorExecutionServiceTest {
     UUID interactionId = UUID.randomUUID();
     UUID receptorId = UUID.randomUUID();
     UUID downstreamMechanismId = UUID.randomUUID();
-    UUID receptorArchetypeId = UUID.randomUUID();
 
     Map<String, Object> inputData = Map.of("body", Map.of("key", "value"));
     Map<String, Object> outputData = Map.of("body", Map.of("result", "ok"));
 
-    EffectDto effect = new EffectDto("RelaySignal", inputData, "RelayEffector", null, null, false);
+    String dataArchetypeId = archetypeId("RelaySignal");
+    String portArchetypeId = archetypeId("RelayEffector");
+    EffectDto effect =
+        new EffectDto(dataArchetypeId, inputData, portArchetypeId, null, null, false);
 
     EffectorAscriptionDto effector =
-        new EffectorAscriptionDto(effectorId, "ACTIVE", 1, mechanismId, effectorArchetypeId);
+        new EffectorAscriptionDto(
+            effectorId, "ACTIVE", 1, portArchetypeId, mechanismId, dataArchetypeId);
     ArchetypeAscriptionDto effectorArchetype =
         new ArchetypeAscriptionDto(effectorArchetypeId, "ACTIVE", 1, "RelayEffector", EMPTY_SCHEMA);
 
@@ -127,7 +134,12 @@ class MechanismRelayEffectorExecutionServiceTest {
         new InteractionAscriptionDto(interactionId, "ACTIVE", 1, effectorId, receptorId);
     ReceptorAscriptionDto downstream =
         new ReceptorAscriptionDto(
-            receptorId, "ACTIVE", 1, downstreamMechanismId, receptorArchetypeId);
+            receptorId,
+            "ACTIVE",
+            1,
+            archetypeId("RelayReceptor"),
+            downstreamMechanismId,
+            archetypeId("RelayReception"));
 
     when(client.findActiveInteractionsForEffector(effectorId)).thenReturn(List.of(interaction));
     when(client.getReceptorAscription(receptorId)).thenReturn(downstream);
@@ -150,10 +162,14 @@ class MechanismRelayEffectorExecutionServiceTest {
 
     Map<String, Object> inputData = Map.of("body", Map.of("key", "value"));
 
-    EffectDto effect = new EffectDto("RelaySignal", inputData, "RelayEffector", null, null, false);
+    String dataArchetypeId = archetypeId("RelaySignal");
+    String portArchetypeId = archetypeId("RelayEffector");
+    EffectDto effect =
+        new EffectDto(dataArchetypeId, inputData, portArchetypeId, null, null, false);
 
     EffectorAscriptionDto effector =
-        new EffectorAscriptionDto(effectorId, "ACTIVE", 1, mechanismId, effectorArchetypeId);
+        new EffectorAscriptionDto(
+            effectorId, "ACTIVE", 1, portArchetypeId, mechanismId, dataArchetypeId);
     ArchetypeAscriptionDto effectorArchetype =
         new ArchetypeAscriptionDto(effectorArchetypeId, "ACTIVE", 1, "RelayEffector", EMPTY_SCHEMA);
 
@@ -170,6 +186,81 @@ class MechanismRelayEffectorExecutionServiceTest {
   }
 
   @Test
+  void chainRejectsAmbiguousEffectorIdentityPair() {
+    UUID mechanismId = UUID.randomUUID();
+    String dataArchetypeId = archetypeId("RelaySignal");
+    String portArchetypeId = archetypeId("RelayEffector");
+    EffectDto effect = new EffectDto(dataArchetypeId, Map.of(), portArchetypeId, null, null, false);
+    EffectorAscriptionDto first =
+        new EffectorAscriptionDto(
+            UUID.randomUUID(), "ACTIVE", 1, portArchetypeId, mechanismId, dataArchetypeId);
+    EffectorAscriptionDto second =
+        new EffectorAscriptionDto(
+            UUID.randomUUID(), "ACTIVE", 1, portArchetypeId, mechanismId, dataArchetypeId);
+    OperationFrameDto frame =
+        new OperationFrameDto(null, List.of(), List.of(first, second), Map.of());
+
+    assertThatThrownBy(() -> dispatcher.dispatch(effect, frame))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Ambiguous effector")
+        .hasMessageContaining(dataArchetypeId)
+        .hasMessageContaining(portArchetypeId);
+    verifyNoInteractions(client);
+    verifyNoInteractions(operationService);
+  }
+
+  @Test
+  void chainRejectsMissingEffectorIdentityPair() {
+    UUID mechanismId = UUID.randomUUID();
+    String dataArchetypeId = archetypeId("RelaySignal");
+    String portArchetypeId = archetypeId("RelayEffector");
+    EffectDto effect = new EffectDto(dataArchetypeId, Map.of(), portArchetypeId, null, null, false);
+    EffectorAscriptionDto mismatched =
+        new EffectorAscriptionDto(
+            UUID.randomUUID(),
+            "ACTIVE",
+            1,
+            portArchetypeId,
+            mechanismId,
+            archetypeId("DifferentSignal"));
+    OperationFrameDto frame = new OperationFrameDto(null, List.of(), List.of(mismatched), Map.of());
+
+    assertThatThrownBy(() -> dispatcher.dispatch(effect, frame))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("No effector")
+        .hasMessageContaining(dataArchetypeId)
+        .hasMessageContaining(portArchetypeId);
+    verifyNoInteractions(client);
+    verifyNoInteractions(operationService);
+  }
+
+  @Test
+  void chainRejectsMultipleActiveInteractions() {
+    UUID mechanismId = UUID.randomUUID();
+    UUID effectorId = UUID.randomUUID();
+    String dataArchetypeId = archetypeId("RelaySignal");
+    String portArchetypeId = archetypeId("RelayEffector");
+    EffectDto effect = new EffectDto(dataArchetypeId, Map.of(), portArchetypeId, null, null, false);
+    EffectorAscriptionDto effector =
+        new EffectorAscriptionDto(
+            effectorId, "ACTIVE", 1, portArchetypeId, mechanismId, dataArchetypeId);
+    OperationFrameDto frame = new OperationFrameDto(null, List.of(), List.of(effector), Map.of());
+    when(client.findActiveInteractionsForEffector(effectorId))
+        .thenReturn(
+            List.of(
+                new InteractionAscriptionDto(
+                    UUID.randomUUID(), "ACTIVE", 1, effectorId, UUID.randomUUID()),
+                new InteractionAscriptionDto(
+                    UUID.randomUUID(), "ACTIVE", 1, effectorId, UUID.randomUUID())));
+
+    assertThatThrownBy(() -> dispatcher.dispatch(effect, frame))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("multiple active Interactions")
+        .hasMessageContaining(effectorId.toString());
+    verifyNoInteractions(operationService);
+  }
+
+  @Test
   void chainThrowsWhenDownstreamMechanismFails() {
     UUID mechanismId = UUID.randomUUID();
     UUID effectorId = UUID.randomUUID();
@@ -177,14 +268,17 @@ class MechanismRelayEffectorExecutionServiceTest {
     UUID interactionId = UUID.randomUUID();
     UUID receptorId = UUID.randomUUID();
     UUID downstreamMechanismId = UUID.randomUUID();
-    UUID receptorArchetypeId = UUID.randomUUID();
 
     Map<String, Object> inputData = Map.of("body", "test");
 
-    EffectDto effect = new EffectDto("RelaySignal", inputData, "RelayEffector", null, null, false);
+    String dataArchetypeId = archetypeId("RelaySignal");
+    String portArchetypeId = archetypeId("RelayEffector");
+    EffectDto effect =
+        new EffectDto(dataArchetypeId, inputData, portArchetypeId, null, null, false);
 
     EffectorAscriptionDto effector =
-        new EffectorAscriptionDto(effectorId, "ACTIVE", 1, mechanismId, effectorArchetypeId);
+        new EffectorAscriptionDto(
+            effectorId, "ACTIVE", 1, portArchetypeId, mechanismId, dataArchetypeId);
     ArchetypeAscriptionDto effectorArchetype =
         new ArchetypeAscriptionDto(effectorArchetypeId, "ACTIVE", 1, "RelayEffector", EMPTY_SCHEMA);
 
@@ -196,7 +290,12 @@ class MechanismRelayEffectorExecutionServiceTest {
         new InteractionAscriptionDto(interactionId, "ACTIVE", 1, effectorId, receptorId);
     ReceptorAscriptionDto downstream =
         new ReceptorAscriptionDto(
-            receptorId, "ACTIVE", 1, downstreamMechanismId, receptorArchetypeId);
+            receptorId,
+            "ACTIVE",
+            1,
+            archetypeId("RelayReceptor"),
+            downstreamMechanismId,
+            archetypeId("RelayReception"));
 
     when(client.findActiveInteractionsForEffector(effectorId)).thenReturn(List.of(interaction));
     when(client.getReceptorAscription(receptorId)).thenReturn(downstream);
@@ -218,5 +317,9 @@ class MechanismRelayEffectorExecutionServiceTest {
     assertThat(result).isEqualTo(inputData);
     verifyNoInteractions(client);
     verifyNoInteractions(operationService);
+  }
+
+  private static String archetypeId(String title) {
+    return "gsmarc://test/" + title + "/v1";
   }
 }

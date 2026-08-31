@@ -75,22 +75,36 @@ class AscriptionDtoValidationTest {
 
   @Test
   void effectorRejectsNullMechanism() {
-    assertThatThrownBy(() -> new EffectorAscriptionDto(VALID_UUID, "ACTIVE", 1, null, VALID_UUID))
+    assertThatThrownBy(
+            () ->
+                new EffectorAscriptionDto(
+                    VALID_UUID,
+                    "ACTIVE",
+                    1,
+                    "gsmarc://gsm/Effector/v1",
+                    null,
+                    "gsmarc://tenant/Data/v1"))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("mechanism");
   }
 
   @Test
   void effectorRejectsNullArchetype() {
-    assertThatThrownBy(() -> new EffectorAscriptionDto(VALID_UUID, "ACTIVE", 1, VALID_UUID, null))
-        .isInstanceOf(NullPointerException.class)
+    assertThatThrownBy(
+            () ->
+                new EffectorAscriptionDto(
+                    VALID_UUID, "ACTIVE", 1, "gsmarc://gsm/Effector/v1", VALID_UUID, null))
+        .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("archetype");
   }
 
   @Test
   void effectorFactoryRejectsMissingMechanism() {
     ObjectNode statement = MAPPER.createObjectNode().put("archetype", VALID_UUID_STR);
-    assertThatThrownBy(() -> EffectorAscriptionDto.fromJson(VALID_UUID, "ACTIVE", 1, statement))
+    assertThatThrownBy(
+            () ->
+                EffectorAscriptionDto.fromJson(
+                    VALID_UUID, "ACTIVE", 1, "gsmarc://gsm/Effector/v1", statement))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mechanism");
   }
@@ -98,16 +112,43 @@ class AscriptionDtoValidationTest {
   @Test
   void effectorFactoryRejectsMissingArchetype() {
     ObjectNode statement = MAPPER.createObjectNode().put("mechanism", VALID_UUID_STR);
-    assertThatThrownBy(() -> EffectorAscriptionDto.fromJson(VALID_UUID, "ACTIVE", 1, statement))
+    assertThatThrownBy(
+            () ->
+                EffectorAscriptionDto.fromJson(
+                    VALID_UUID, "ACTIVE", 1, "gsmarc://gsm/Effector/v1", statement))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("archetype");
+  }
+
+  @Test
+  void effectorFactoryKeepsDistinctPortAndDataArchetypeUris() {
+    ObjectNode statement =
+        MAPPER
+            .createObjectNode()
+            .put("mechanism", VALID_UUID_STR)
+            .put("archetype", "gsmarc://other/data/Shared/v1");
+
+    EffectorAscriptionDto dto =
+        EffectorAscriptionDto.fromJson(
+            VALID_UUID, "ACTIVE", 1, "gsmarc://tenant/ports/Shared/v1", statement);
+
+    assertThat(dto.portArchetypeUri()).isEqualTo("gsmarc://tenant/ports/Shared/v1");
+    assertThat(dto.archetype()).isEqualTo("gsmarc://other/data/Shared/v1");
   }
 
   // --- ReceptorAscriptionDto ---
 
   @Test
   void receptorRejectsNullMechanism() {
-    assertThatThrownBy(() -> new ReceptorAscriptionDto(VALID_UUID, "ACTIVE", 1, null, VALID_UUID))
+    assertThatThrownBy(
+            () ->
+                new ReceptorAscriptionDto(
+                    VALID_UUID,
+                    "ACTIVE",
+                    1,
+                    "gsmarc://gsm/Receptor/v1",
+                    null,
+                    "gsmarc://tenant/Data/v1"))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("mechanism");
   }
@@ -115,7 +156,10 @@ class AscriptionDtoValidationTest {
   @Test
   void receptorFactoryRejectsMissingMechanism() {
     ObjectNode statement = MAPPER.createObjectNode().put("archetype", VALID_UUID_STR);
-    assertThatThrownBy(() -> ReceptorAscriptionDto.fromJson(VALID_UUID, "ACTIVE", 1, statement))
+    assertThatThrownBy(
+            () ->
+                ReceptorAscriptionDto.fromJson(
+                    VALID_UUID, "ACTIVE", 1, "gsmarc://gsm/Receptor/v1", statement))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mechanism");
   }
@@ -123,9 +167,28 @@ class AscriptionDtoValidationTest {
   @Test
   void receptorFactoryRejectsMissingArchetype() {
     ObjectNode statement = MAPPER.createObjectNode().put("mechanism", VALID_UUID_STR);
-    assertThatThrownBy(() -> ReceptorAscriptionDto.fromJson(VALID_UUID, "ACTIVE", 1, statement))
+    assertThatThrownBy(
+            () ->
+                ReceptorAscriptionDto.fromJson(
+                    VALID_UUID, "ACTIVE", 1, "gsmarc://gsm/Receptor/v1", statement))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("archetype");
+  }
+
+  @Test
+  void receptorFactoryKeepsDistinctPortAndDataArchetypeUris() {
+    ObjectNode statement =
+        MAPPER
+            .createObjectNode()
+            .put("mechanism", VALID_UUID_STR)
+            .put("archetype", "gsmarc://other/data/Shared/v1");
+
+    ReceptorAscriptionDto dto =
+        ReceptorAscriptionDto.fromJson(
+            VALID_UUID, "ACTIVE", 1, "gsmarc://tenant/ports/Shared/v1", statement);
+
+    assertThat(dto.portArchetypeUri()).isEqualTo("gsmarc://tenant/ports/Shared/v1");
+    assertThat(dto.archetype()).isEqualTo("gsmarc://other/data/Shared/v1");
   }
 
   // --- InteractionAscriptionDto ---
@@ -232,5 +295,47 @@ class AscriptionDtoValidationTest {
     assertThatThrownBy(() -> ArchetypeAscriptionDto.fromJson(VALID_UUID, "ACTIVE", 1, null))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("statement is required");
+  }
+
+  @Test
+  void archetypeRejectsMissingUri() {
+    ObjectNode schema = MAPPER.createObjectNode().put("type", "object");
+
+    assertThatThrownBy(() -> new ArchetypeAscriptionDto(VALID_UUID, "ACTIVE", 1, "title", schema))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("$id");
+  }
+
+  @Test
+  void archetypeRejectsBlankUri() {
+    ObjectNode schema = MAPPER.createObjectNode().put("$id", "  ").put("type", "object");
+
+    assertThatThrownBy(() -> new ArchetypeAscriptionDto(VALID_UUID, "ACTIVE", 1, "title", schema))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("$id");
+  }
+
+  // --- NormAscriptionDto ---
+
+  @Test
+  void normDeserializesStatementApplicability() throws Exception {
+    String archetypeId = "gsmarc://tenant/DeploymentProperties/v1";
+    String response =
+        """
+        {
+          "id": "01961234-5678-7000-8000-000000000001",
+          "status": "ACTIVE",
+          "version": 3,
+          "statement": {
+            "applicability": "ref(\\\"gsmarc://tenant/DeploymentProperties/v1\\\").region == \\\"us-east-1\\\""
+          }
+        }
+        """;
+
+    NormAscriptionDto dto = MAPPER.readValue(response, NormAscriptionDto.class);
+
+    assertThat(dto.id()).isEqualTo(VALID_UUID);
+    assertThat(dto.version()).isEqualTo(3);
+    assertThat(dto.applicability()).contains(archetypeId);
   }
 }

@@ -2,7 +2,7 @@
   "$schema": "gsmarc://gsm/Archetype/v1",
   "$id": "gsmarc://ops/protocols/governance/GovernanceEvent/v1",
   "title": "GovernanceEvent",
-  "description": "Types the data payload flowing through Governance Effectors/Receptors when the payload is a governance event message. A governance event signals a state change in the governance lifecycle — an evaluation trigger, a compliance assertion, or a sourcing notification. Extending archetypes add domain-specific payloads via $ref/allOf composition. Source: ITIP Meta-Governance Framework; GSM Directive/Norm/Ascription governance grammar.",
+  "description": "Types the data payload flowing through Governance Effectors/Receptors when the payload is a governance event message. A governance event signals a state change in the governance lifecycle — an evaluation trigger, a compliance assertion, or a sourcing notification. Extending archetypes add domain-specific payloads via $ref/allOf composition. Source: ITIP Meta-Governance Ontology; GSM Directive/Norm/Ascription governance grammar.",
   "type": "object",
   "required": [
     "eventType",
@@ -16,7 +16,7 @@
         "COMPLIANCE_ASSERTION",
         "SOURCING_NOTIFICATION"
       ],
-      "description": "Governance event discriminator. EVALUATION_TRIGGER — signals that an evaluation cycle should be initiated for the referenced subject. COMPLIANCE_ASSERTION — asserts a compliance posture change for a governed entity. SOURCING_NOTIFICATION — notifies that a framework sourcing operation completed (new directives/norms ingested). Source: ITIP meta-governance; GSM Ascription lifecycle.",
+      "description": "Governance event discriminator. EVALUATION_TRIGGER — signals that an evaluation cycle should be initiated for the referenced subject. COMPLIANCE_ASSERTION — asserts a compliance posture change for a governed entity. SOURCING_NOTIFICATION — notifies that a ontology sourcing operation completed (new directives/norms ingested). Source: ITIP meta-governance; GSM Ascription lifecycle.",
       "$gsm:identityBound": true,
       "$gsm:queryable": true
     },
@@ -28,11 +28,11 @@
       "$gsm:identityBound": true,
       "$gsm:queryable": true
     },
-    "frameworkRef": {
+    "ontologyRef": {
       "type": "string",
       "format": "uri",
       "minLength": 1,
-      "description": "URI reference to the governance framework under which this event is raised (e.g., 'gsmarc://frameworks/gdpr/v1'). Optional for cross-framework events. Source: ITIP framework catalog.",
+      "description": "URI reference to the governance ontology under which this event is raised (e.g., 'gsmarc://gsm-ontology/gdpr/v1'). Optional for cross-ontology events. Source: ITIP ontology catalogue.",
       "$gsm:queryable": true
     },
     "payload": {

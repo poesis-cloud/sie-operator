@@ -77,6 +77,19 @@
       <version>1.5.7</version>
     </dependency>
 
+    <!-- CEL (Norm applicability evaluation) -->
+    <dependency>
+      <groupId>dev.cel</groupId>
+      <artifactId>cel</artifactId>
+      <version>0.12.0</version>
+    </dependency>
+    <!-- Pinned: starlark 4.2.1 drags Guava 27.1, which breaks CEL's runtime. -->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>33.5.0-jre</version>
+    </dependency>
+
     <!-- OpenAPI -->
     <dependency>
       <groupId>org.springdoc</groupId>
@@ -113,27 +126,19 @@
         <targetPath>statement</targetPath>
       </resource>
       <!--
-        Protocol archetype source-of-truth lives in the ITIP framework
-        catalogue (sibling repo, gsm-frameworks). HTTP schemas are vendored
+        Protocol archetype source-of-truth lives in the ITIP ontology
+        catalogue (sibling repo, gsm-ontology). HTTP schemas are vendored
         on the operator classpath under statement/protocol/http/ so
         StructureSeedRunner can register them at startup without a network
         round-trip. Cross-repo coupling within the poesis workspace is
-        intentional during the design phase. See gsm-frameworks/frameworks/http/
+        intentional during the design phase. See gsm-ontology/ontologies/http/
         for the canonical definitions.
 
-        The HTTP archetypes inherit the framework base archetypes (gsmarc://gsm-frameworks/*),
-        not the GSM bases directly, so the ITIP Layer-2 bases are vendored too
-        and registered first.
+        The HTTP archetypes inherit GSM bases directly; no intermediate
+        catalogue-owned base layer is vendored.
       -->
       <resource>
-        <directory>../../gsm/gsm-frameworks/frameworks/base</directory>
-        <targetPath>statement/base</targetPath>
-        <includes>
-          <include>*.archetype.json</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>../../gsm/gsm-frameworks/frameworks/http</directory>
+        <directory>../../gsm/gsm-ontology/ontologies/http</directory>
         <targetPath>statement/protocol/http</targetPath>
         <includes>
           <include>*.archetype.json</include>

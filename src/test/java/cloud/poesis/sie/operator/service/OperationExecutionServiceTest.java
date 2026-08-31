@@ -7,6 +7,7 @@ import cloud.poesis.sie.operator.dto.EffectDto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class OperationExecutionServiceTest {
@@ -25,22 +26,25 @@ class OperationExecutionServiceTest {
   void executesSimpleFireAndForgetRule() throws Exception {
     String rule =
         """
-        event = sys.receive("PaymentFailed")
-        sys.effect("OrderUpdate", {"orderId": event["orderId"], "status": "failed"})
+        event = sys.receive("gsmarc://test/PaymentFailed/v1")
+        sys.effect("gsmarc://test/OrderUpdate/v1", {"orderId": event["orderId"], "status": "failed"})
         """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
-        sandbox.execute(
+        execute(
+            sandbox,
             "mech-001",
             rule,
             Map.of("orderId", "ORD-123", "reason", "insufficient_funds"),
-            this::handleEffect);
+            this::handleEffect,
+            Set.of(archetypeId("PaymentFailed")),
+            Set.of(archetypeId("OrderUpdate")));
 
     assertThat(result.success()).isTrue();
     assertThat(result.effects()).hasSize(1);
-    assertThat(result.effects().getFirst().archetype()).isEqualTo("OrderUpdate");
+    assertThat(result.effects().getFirst().archetype()).isEqualTo(archetypeId("OrderUpdate"));
     assertThat(result.effects().getFirst().data()).containsEntry("orderId", "ORD-123");
     assertThat(result.effects().getFirst().data()).containsEntry("status", "failed");
   }
@@ -49,36 +53,50 @@ class OperationExecutionServiceTest {
   void executesClosedLoopRule() throws Exception {
     String rule =
         """
-        event = sys.receive("OrderCreated")
-        result = sys.effect("ValidatePayment", {"orderId": event["orderId"]}).receive("ValidationResult")
+        event = sys.receive("gsmarc://test/OrderCreated/v1")
+        result = sys.effect("gsmarc://test/ValidatePayment/v1", {"orderId": event["orderId"]}).receive("gsmarc://test/ValidationResult/v1")
         if result["approved"]:
-            sys.effect("OrderApproved", {"orderId": event["orderId"]})
+            sys.effect("gsmarc://test/OrderApproved/v1", {"orderId": event["orderId"]})
         """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
-        sandbox.execute("mech-002", rule, Map.of("orderId", "ORD-456"), this::handleEffect);
+        execute(
+            sandbox,
+            "mech-002",
+            rule,
+            Map.of("orderId", "ORD-456"),
+            this::handleEffect,
+            Set.of(archetypeId("OrderCreated"), archetypeId("ValidationResult")),
+            Set.of(archetypeId("ValidatePayment"), archetypeId("OrderApproved")));
 
     assertThat(result.success()).as("error: %s", result.error()).isTrue();
     assertThat(result.effects()).hasSize(2);
     assertThat(result.effects().get(0).closedLoop()).isTrue();
-    assertThat(result.effects().get(1).archetype()).isEqualTo("OrderApproved");
+    assertThat(result.effects().get(1).archetype()).isEqualTo(archetypeId("OrderApproved"));
   }
 
   @Test
   void hostFunctionNowIsAvailable() throws Exception {
     String rule =
         """
-        event = sys.receive("Trigger")
+        event = sys.receive("gsmarc://test/Trigger/v1")
         ts = now()
-        sys.effect("Timestamped", {"ts": ts})
+        sys.effect("gsmarc://test/Timestamped/v1", {"ts": ts})
         """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
-        sandbox.execute("mech-003", rule, Map.of(), this::handleEffect);
+        execute(
+            sandbox,
+            "mech-003",
+            rule,
+            Map.of(),
+            this::handleEffect,
+            Set.of(archetypeId("Trigger")),
+            Set.of(archetypeId("Timestamped")));
 
     assertThat(result.success()).isTrue();
     String ts = (String) result.effects().getFirst().data().get("ts");
@@ -89,15 +107,22 @@ class OperationExecutionServiceTest {
   void hostFunctionUuid7IsAvailable() throws Exception {
     String rule =
         """
-        event = sys.receive("Trigger")
+        event = sys.receive("gsmarc://test/Trigger/v1")
         id = uuid7()
-        sys.effect("WithId", {"id": id})
+        sys.effect("gsmarc://test/WithId/v1", {"id": id})
         """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
-        sandbox.execute("mech-004", rule, Map.of(), this::handleEffect);
+        execute(
+            sandbox,
+            "mech-004",
+            rule,
+            Map.of(),
+            this::handleEffect,
+            Set.of(archetypeId("Trigger")),
+            Set.of(archetypeId("WithId")));
 
     assertThat(result.success()).isTrue();
     String id = (String) result.effects().getFirst().data().get("id");
@@ -108,15 +133,22 @@ class OperationExecutionServiceTest {
   void hostFunctionFullmatchIsAvailable() throws Exception {
     String rule =
         """
-        event = sys.receive("Trigger")
+        event = sys.receive("gsmarc://test/Trigger/v1")
         matched = fullmatch("[a-z]+", event["value"])
-        sys.effect("Result", {"matched": matched})
+        sys.effect("gsmarc://test/Result/v1", {"matched": matched})
         """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
-        sandbox.execute("mech-005", rule, Map.of("value", "abc"), this::handleEffect);
+        execute(
+            sandbox,
+            "mech-005",
+            rule,
+            Map.of("value", "abc"),
+            this::handleEffect,
+            Set.of(archetypeId("Trigger")),
+            Set.of(archetypeId("Result")));
 
     assertThat(result.success()).isTrue();
     assertThat(result.effects().getFirst().data().get("matched")).isEqualTo(true);
@@ -126,15 +158,22 @@ class OperationExecutionServiceTest {
   void hostFunctionSearchIsAvailable() throws Exception {
     String rule =
         """
-        event = sys.receive("Trigger")
+        event = sys.receive("gsmarc://test/Trigger/v1")
         ver = search("v([0-9.]+)", event["tag"])
-        sys.effect("Result", {"version": ver})
+        sys.effect("gsmarc://test/Result/v1", {"version": ver})
         """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
-        sandbox.execute("mech-006", rule, Map.of("tag", "app-v2.3.1"), this::handleEffect);
+        execute(
+            sandbox,
+            "mech-006",
+            rule,
+            Map.of("tag", "app-v2.3.1"),
+            this::handleEffect,
+            Set.of(archetypeId("Trigger")),
+            Set.of(archetypeId("Result")));
 
     assertThat(result.success()).isTrue();
     assertThat(result.effects().getFirst().data().get("version")).isEqualTo("2.3.1");
@@ -142,12 +181,19 @@ class OperationExecutionServiceTest {
 
   @Test
   void syntaxErrorReturnsFailure() throws Exception {
-    String rule = "event = sys.receive(\"T\")\nif True\n  pass";
+    String rule = "event = sys.receive(\"gsmarc://test/T/v1\")\nif True\n  pass";
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
-        sandbox.execute("mech-err", rule, Map.of(), this::handleEffect);
+        execute(
+            sandbox,
+            "mech-err",
+            rule,
+            Map.of(),
+            this::handleEffect,
+            Set.of(archetypeId("T")),
+            Set.of());
 
     assertThat(result.success()).isFalse();
     assertThat(result.error()).isNotEmpty();
@@ -157,14 +203,21 @@ class OperationExecutionServiceTest {
   void runtimeErrorReturnsFailure() throws Exception {
     String rule =
         """
-        event = sys.receive("T")
+        event = sys.receive("gsmarc://test/T/v1")
         x = 1 / 0
         """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
-        sandbox.execute("mech-err2", rule, Map.of(), this::handleEffect);
+        execute(
+            sandbox,
+            "mech-err2",
+            rule,
+            Map.of(),
+            this::handleEffect,
+            Set.of(archetypeId("T")),
+            Set.of());
 
     assertThat(result.success()).isFalse();
     assertThat(result.error()).containsIgnoringCase("division");
@@ -174,7 +227,7 @@ class OperationExecutionServiceTest {
   void maxStepsEnforced() throws Exception {
     String rule =
         """
-        event = sys.receive("T")
+        event = sys.receive("gsmarc://test/T/v1")
         x = 0
         for i in range(1000000):
             x = x + 1
@@ -183,7 +236,14 @@ class OperationExecutionServiceTest {
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox, 100);
     OperationExecutionService.ExecutionResult result =
-        sandbox.execute("mech-budget", rule, Map.of(), this::handleEffect);
+        execute(
+            sandbox,
+            "mech-budget",
+            rule,
+            Map.of(),
+            this::handleEffect,
+            Set.of(archetypeId("T")),
+            Set.of());
 
     assertThat(result.success()).isFalse();
   }
@@ -192,49 +252,83 @@ class OperationExecutionServiceTest {
   void effectWithFullChain() throws Exception {
     String rule =
         """
-        event = sys.receive("Trigger")
-        result = (sys.effect("FraudCheck", {"orderId": event["oid"]})
-            .by("FraudGateway")
-            .receive("FraudResult")
-            .on("FraudReceiver"))
+        event = sys.receive("gsmarc://test/Trigger/v1")
+        result = (sys.effect("gsmarc://test/FraudCheck/v1", {"orderId": event["oid"]})
+            .by("gsmarc://test/FraudGateway/v1")
+            .receive("gsmarc://test/FraudResult/v1")
+            .on("gsmarc://test/FraudReceiver/v1"))
         if result["approved"]:
-            sys.effect("Cleared", {"oid": event["oid"]})
-        """;
-
-    OperationExecutionService sandbox =
-        new OperationExecutionService(OperationSandboxConfig::createSandbox);
-    OperationExecutionService.ExecutionResult result =
-        sandbox.execute("mech-007", rule, Map.of("oid", "O-1"), this::handleEffect);
-
-    assertThat(result.success()).isTrue();
-    assertThat(result.effects()).hasSize(2);
-    EffectDto fraud = result.effects().get(0);
-    assertThat(fraud.effectorArchetype()).isEqualTo("FraudGateway");
-    assertThat(fraud.feedbackArchetype()).isEqualTo("FraudResult");
-    assertThat(fraud.feedbackReceptorArchetype()).isEqualTo("FraudReceiver");
-  }
-
-  @Test
-  void containsRuntimeExceptionFromHandler() throws Exception {
-    String rule =
-        """
-        event = sys.receive("Trigger")
-        result = sys.effect("Bad", {"x": 1}).receive("Response")
-        val = result["key"]
+            sys.effect("gsmarc://test/Cleared/v1", {"oid": event["oid"]})
         """;
 
     OperationExecutionService sandbox =
         new OperationExecutionService(OperationSandboxConfig::createSandbox);
     OperationExecutionService.ExecutionResult result =
         sandbox.execute(
+            "mech-007",
+            rule,
+            Map.of("oid", "O-1"),
+            this::handleEffect,
+            Set.of(archetypeId("Trigger"), archetypeId("FraudResult")),
+            Set.of(archetypeId("FraudCheck"), archetypeId("Cleared")),
+            Set.of(archetypeId("FraudReceiver")),
+            Set.of(archetypeId("FraudGateway")));
+
+    assertThat(result.success()).isTrue();
+    assertThat(result.effects()).hasSize(2);
+    EffectDto fraud = result.effects().get(0);
+    assertThat(fraud.effectorArchetype()).isEqualTo(archetypeId("FraudGateway"));
+    assertThat(fraud.feedbackArchetype()).isEqualTo(archetypeId("FraudResult"));
+    assertThat(fraud.feedbackReceptorArchetype()).isEqualTo(archetypeId("FraudReceiver"));
+  }
+
+  @Test
+  void containsRuntimeExceptionFromHandler() throws Exception {
+    String rule =
+        """
+        event = sys.receive("gsmarc://test/Trigger/v1")
+        result = sys.effect("gsmarc://test/Bad/v1", {"x": 1}).receive("gsmarc://test/Response/v1")
+        val = result["key"]
+        """;
+
+    OperationExecutionService sandbox =
+        new OperationExecutionService(OperationSandboxConfig::createSandbox);
+    OperationExecutionService.ExecutionResult result =
+        execute(
+            sandbox,
             "mech-err3",
             rule,
             Map.of(),
             effect -> {
               throw new IllegalStateException("Validation failed");
-            });
+            },
+            Set.of(archetypeId("Trigger"), archetypeId("Response")),
+            Set.of(archetypeId("Bad")));
 
     assertThat(result.success()).isFalse();
     assertThat(result.error()).contains("Validation failed");
+  }
+
+  private OperationExecutionService.ExecutionResult execute(
+      OperationExecutionService sandbox,
+      String mechanismId,
+      String rule,
+      Map<String, Object> input,
+      java.util.function.Function<EffectDto, Object> effectHandler,
+      Set<String> receptorDataArchetypes,
+      Set<String> effectorDataArchetypes) {
+    return sandbox.execute(
+        mechanismId,
+        rule,
+        input,
+        effectHandler,
+        receptorDataArchetypes,
+        effectorDataArchetypes,
+        Set.of(),
+        Set.of());
+  }
+
+  private static String archetypeId(String title) {
+    return "gsmarc://test/" + title + "/v1";
   }
 }

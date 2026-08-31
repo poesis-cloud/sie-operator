@@ -54,16 +54,58 @@ public class OperationSandboxConfig {
       String mechanismId,
       Map<String, Object> operationInput,
       Function<EffectDto, Object> effectHandler,
-      Set<String> validReceptorArchetypes,
-      Set<String> validEffectorArchetypes) {
+      Set<String> validReceptorDataArchetypes,
+      Set<String> validEffectorDataArchetypes) {
+    return createSandbox(
+        mechanismId,
+        operationInput,
+        effectHandler,
+        validReceptorDataArchetypes,
+        validEffectorDataArchetypes,
+        Set.of(),
+        Set.of(),
+        false);
+  }
+
+  public static OperationExecutionService.RuleSandbox createSandbox(
+      String mechanismId,
+      Map<String, Object> operationInput,
+      Function<EffectDto, Object> effectHandler,
+      Set<String> validReceptorDataArchetypes,
+      Set<String> validEffectorDataArchetypes,
+      Set<String> validReceptorPortArchetypes,
+      Set<String> validEffectorPortArchetypes) {
+    return createSandbox(
+        mechanismId,
+        operationInput,
+        effectHandler,
+        validReceptorDataArchetypes,
+        validEffectorDataArchetypes,
+        validReceptorPortArchetypes,
+        validEffectorPortArchetypes,
+        true);
+  }
+
+  private static OperationExecutionService.RuleSandbox createSandbox(
+      String mechanismId,
+      Map<String, Object> operationInput,
+      Function<EffectDto, Object> effectHandler,
+      Set<String> validReceptorDataArchetypes,
+      Set<String> validEffectorDataArchetypes,
+      Set<String> validReceptorPortArchetypes,
+      Set<String> validEffectorPortArchetypes,
+      boolean topologyEnforced) {
 
     SysModule sys =
         new SysModule(
             mechanismId,
             operationInput,
             effectHandler,
-            validReceptorArchetypes,
-            validEffectorArchetypes);
+            validReceptorDataArchetypes,
+            validEffectorDataArchetypes,
+            validReceptorPortArchetypes,
+            validEffectorPortArchetypes,
+            topologyEnforced);
     HostFunctions hostFunctions = new HostFunctions();
 
     ImmutableMap.Builder<String, Object> predeclared = ImmutableMap.builder();
@@ -197,8 +239,11 @@ public class OperationSandboxConfig {
     private final String mechanismId;
     private final Map<String, Object> operationInput;
     private final Function<EffectDto, Object> effectHandler;
-    private final Set<String> validReceptorArchetypes;
-    private final Set<String> validEffectorArchetypes;
+    private final Set<String> validReceptorDataArchetypes;
+    private final Set<String> validEffectorDataArchetypes;
+    private final Set<String> validReceptorPortArchetypes;
+    private final Set<String> validEffectorPortArchetypes;
+    private final boolean topologyEnforced;
     private final List<Effect> pendingEffects = new ArrayList<>();
     private boolean receiveCalled;
 
@@ -206,15 +251,40 @@ public class OperationSandboxConfig {
         String mechanismId,
         Map<String, Object> operationInput,
         Function<EffectDto, Object> effectHandler,
-        Set<String> validReceptorArchetypes,
-        Set<String> validEffectorArchetypes) {
+        Set<String> validReceptorDataArchetypes,
+        Set<String> validEffectorDataArchetypes) {
+      this(
+          mechanismId,
+          operationInput,
+          effectHandler,
+          validReceptorDataArchetypes,
+          validEffectorDataArchetypes,
+          Set.of(),
+          Set.of(),
+          false);
+    }
+
+    SysModule(
+        String mechanismId,
+        Map<String, Object> operationInput,
+        Function<EffectDto, Object> effectHandler,
+        Set<String> validReceptorDataArchetypes,
+        Set<String> validEffectorDataArchetypes,
+        Set<String> validReceptorPortArchetypes,
+        Set<String> validEffectorPortArchetypes,
+        boolean topologyEnforced) {
       this.mechanismId = mechanismId;
       this.operationInput = operationInput != null ? operationInput : Collections.emptyMap();
       this.effectHandler = effectHandler;
-      this.validReceptorArchetypes =
-          validReceptorArchetypes != null ? validReceptorArchetypes : Set.of();
-      this.validEffectorArchetypes =
-          validEffectorArchetypes != null ? validEffectorArchetypes : Set.of();
+      this.validReceptorDataArchetypes =
+          validReceptorDataArchetypes != null ? validReceptorDataArchetypes : Set.of();
+      this.validEffectorDataArchetypes =
+          validEffectorDataArchetypes != null ? validEffectorDataArchetypes : Set.of();
+      this.validReceptorPortArchetypes =
+          validReceptorPortArchetypes != null ? validReceptorPortArchetypes : Set.of();
+      this.validEffectorPortArchetypes =
+          validEffectorPortArchetypes != null ? validEffectorPortArchetypes : Set.of();
+      this.topologyEnforced = topologyEnforced;
     }
 
     @StarlarkMethod(name = "id", doc = "The Mechanism's id (UUIDv7).", structField = true)
@@ -230,12 +300,14 @@ public class OperationSandboxConfig {
       if (receiveCalled) {
         throw Starlark.errorf("sys.receive() must be called exactly once");
       }
-      if (!validReceptorArchetypes.isEmpty() && !validReceptorArchetypes.contains(eventArchetype)) {
+      if (topologyEnforced && !validReceptorDataArchetypes.contains(eventArchetype)) {
         throw Starlark.errorf(
-            "Unknown receptor archetype '%s'. Valid: %s", eventArchetype, validReceptorArchetypes);
+            "Unknown receptor data archetype '%s'. Valid: %s",
+            eventArchetype, validReceptorDataArchetypes);
       }
       receiveCalled = true;
-      return new Reception(toStarlarkDict(operationInput));
+      return new Reception(
+          toStarlarkDict(operationInput), validReceptorPortArchetypes, topologyEnforced);
     }
 
     @StarlarkMethod(
@@ -253,12 +325,21 @@ public class OperationSandboxConfig {
       if (!receiveCalled) {
         throw Starlark.errorf("sys.receive() must be called before sys.effect()");
       }
-      if (!validEffectorArchetypes.isEmpty() && !validEffectorArchetypes.contains(archetype)) {
+      if (topologyEnforced && !validEffectorDataArchetypes.contains(archetype)) {
         throw Starlark.errorf(
-            "Unknown effector data archetype '%s'. Valid: %s", archetype, validEffectorArchetypes);
+            "Unknown effector data archetype '%s'. Valid: %s",
+            archetype, validEffectorDataArchetypes);
       }
       Map<String, Object> dataMap = convertDict(data);
-      Effect effect = new Effect(archetype, dataMap, effectHandler);
+      Effect effect =
+          new Effect(
+              archetype,
+              dataMap,
+              effectHandler,
+              validReceptorDataArchetypes,
+              validReceptorPortArchetypes,
+              validEffectorPortArchetypes,
+              topologyEnforced);
       pendingEffects.add(effect);
       return effect;
     }
@@ -328,10 +409,23 @@ public class OperationSandboxConfig {
   static class Reception implements StarlarkIndexable {
 
     private final Dict<String, Object> input;
+    private final Set<String> validPortArchetypes;
+    private final boolean topologyEnforced;
     private boolean onCalled;
 
-    Reception(Dict<String, Object> input) {
+    Reception(
+        Dict<String, Object> input, Set<String> validPortArchetypes, boolean topologyEnforced) {
       this.input = input;
+      this.validPortArchetypes = validPortArchetypes;
+      this.topologyEnforced = topologyEnforced;
+    }
+
+    Reception(Dict<String, Object> input) {
+      this(input, Set.of(), false);
+    }
+
+    Reception(Dict<String, Object> input, Set<String> validPortArchetypes) {
+      this(input, validPortArchetypes, true);
     }
 
     @StarlarkMethod(
@@ -341,6 +435,11 @@ public class OperationSandboxConfig {
     public Reception on(String receptorArchetype) throws EvalException {
       if (onCalled) {
         throw Starlark.errorf(".on() may only be called once on sys.receive()");
+      }
+      if (topologyEnforced && !validPortArchetypes.contains(receptorArchetype)) {
+        throw Starlark.errorf(
+            "Unknown receptor port archetype '%s'. Valid: %s",
+            receptorArchetype, validPortArchetypes);
       }
       onCalled = true;
       return this;
@@ -369,6 +468,10 @@ public class OperationSandboxConfig {
     private final String archetype;
     private final Map<String, Object> data;
     private final Function<EffectDto, Object> dispatcher;
+    private final Set<String> validFeedbackDataArchetypes;
+    private final Set<String> validReceptorPortArchetypes;
+    private final Set<String> validEffectorPortArchetypes;
+    private final boolean topologyEnforced;
 
     private String effectorArchetype;
     private String feedbackArchetype;
@@ -377,9 +480,41 @@ public class OperationSandboxConfig {
     private Dict<String, Object> feedbackResult;
 
     Effect(String archetype, Map<String, Object> data, Function<EffectDto, Object> dispatcher) {
+      this(archetype, data, dispatcher, Set.of(), Set.of(), Set.of(), false);
+    }
+
+    Effect(
+        String archetype,
+        Map<String, Object> data,
+        Function<EffectDto, Object> dispatcher,
+        Set<String> validFeedbackDataArchetypes,
+        Set<String> validReceptorPortArchetypes,
+        Set<String> validEffectorPortArchetypes) {
+      this(
+          archetype,
+          data,
+          dispatcher,
+          validFeedbackDataArchetypes,
+          validReceptorPortArchetypes,
+          validEffectorPortArchetypes,
+          true);
+    }
+
+    Effect(
+        String archetype,
+        Map<String, Object> data,
+        Function<EffectDto, Object> dispatcher,
+        Set<String> validFeedbackDataArchetypes,
+        Set<String> validReceptorPortArchetypes,
+        Set<String> validEffectorPortArchetypes,
+        boolean topologyEnforced) {
       this.archetype = archetype;
       this.data = data;
       this.dispatcher = dispatcher;
+      this.validFeedbackDataArchetypes = validFeedbackDataArchetypes;
+      this.validReceptorPortArchetypes = validReceptorPortArchetypes;
+      this.validEffectorPortArchetypes = validEffectorPortArchetypes;
+      this.topologyEnforced = topologyEnforced;
     }
 
     @StarlarkMethod(
@@ -389,6 +524,11 @@ public class OperationSandboxConfig {
     public Effect by(String effectorArchetype) throws EvalException {
       if (this.effectorArchetype != null) {
         throw Starlark.errorf(".by() may only be called once per effect chain");
+      }
+      if (topologyEnforced && !validEffectorPortArchetypes.contains(effectorArchetype)) {
+        throw Starlark.errorf(
+            "Unknown effector port archetype '%s'. Valid: %s",
+            effectorArchetype, validEffectorPortArchetypes);
       }
       this.effectorArchetype = effectorArchetype;
       return this;
@@ -401,6 +541,11 @@ public class OperationSandboxConfig {
     public Effect receive(String feedbackArchetype) throws EvalException {
       if (this.feedbackArchetype != null) {
         throw Starlark.errorf(".receive() may only be called once per effect chain");
+      }
+      if (topologyEnforced && !validFeedbackDataArchetypes.contains(feedbackArchetype)) {
+        throw Starlark.errorf(
+            "Unknown feedback data archetype '%s'. Valid: %s",
+            feedbackArchetype, validFeedbackDataArchetypes);
       }
       this.feedbackArchetype = feedbackArchetype;
       return this;
@@ -416,6 +561,11 @@ public class OperationSandboxConfig {
       }
       if (this.feedbackReceptorArchetype != null) {
         throw Starlark.errorf(".on() may only be called once per effect chain");
+      }
+      if (topologyEnforced && !validReceptorPortArchetypes.contains(receptorArchetype)) {
+        throw Starlark.errorf(
+            "Unknown receptor port archetype '%s'. Valid: %s",
+            receptorArchetype, validReceptorPortArchetypes);
       }
       this.feedbackReceptorArchetype = receptorArchetype;
       return this;

@@ -1,6 +1,7 @@
 package cloud.poesis.sie.operator.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import cloud.poesis.sie.operator.dto.ArchetypeAscriptionDto;
 import cloud.poesis.sie.operator.dto.EffectorAscriptionDto;
@@ -77,7 +78,7 @@ class DefinitionManagerClientTest {
         """
         {
           "id": "01961234-5678-7000-8000-000000000099",
-          "statement": {"title": "AppraisalTrigger", "type": "object", "properties": {}},
+          "statement": {"$id": "gsmarc://test/AppraisalTrigger/v1", "title": "AppraisalTrigger", "type": "object", "properties": {}},
           "version": 1,
           "status": "ACTIVE"
         }
@@ -95,17 +96,21 @@ class DefinitionManagerClientTest {
   }
 
   @Test
-  void fetchesEffectorsForMechanism() throws InterruptedException {
-    UUID mechanismAscId = UUID.fromString("01961234-5678-7000-8000-000000000002");
-    UUID archetypeId = UUID.fromString("01961234-5678-7000-8000-000000000099");
+  void fetchesArchetypeByUri() throws InterruptedException {
+    String archetypeUri = "gsmarc://tenant/DeploymentProperties/v1";
     String response =
         """
         {
           "_embedded": {
-            "ascriptionDtoList": [
+            "ascriptions": [
               {
-                "id": "01961234-5678-7000-8000-000000000020",
-                "statement": {"mechanism": "01961234-5678-7000-8000-000000000002", "archetype": "01961234-5678-7000-8000-000000000099"},
+                "id": "01961234-5678-7000-8000-000000000099",
+                "statement": {
+                  "$id": "gsmarc://tenant/DeploymentProperties/v1",
+                  "title": "DeploymentProperties",
+                  "type": "object",
+                  "properties": {}
+                },
                 "version": 1,
                 "status": "ACTIVE"
               }
@@ -116,30 +121,137 @@ class DefinitionManagerClientTest {
         """;
     server.enqueue(
         new MockResponse().setBody(response).setHeader("Content-Type", "application/json"));
+
+    ArchetypeAscriptionDto ascription = client.getArchetypeAscription(archetypeUri);
+
+    assertThat(ascription.schema().path("$id").asText()).isEqualTo(archetypeUri);
+    RecordedRequest request = server.takeRequest();
+    assertThat(request.getPath()).contains("type=ARCHETYPE");
+    assertThat(request.getPath()).contains("archetypeUri=gsmarc://gsm/Archetype/v1");
+    assertThat(request.getPath()).contains("statement.$id=gsmarc://tenant/DeploymentProperties/v1");
+    assertThat(request.getPath()).doesNotContain("statement.title");
+  }
+
+  @Test
+  void exactUriLookupRejectsNoMatches() {
+    String archetypeUri = "gsmarc://tenant/DeploymentProperties/v1";
+    server.enqueue(
+        new MockResponse()
+            .setBody("{\"_embedded\":{\"ascriptions\":[]}}")
+            .setHeader("Content-Type", "application/json"));
+
+    assertThatThrownBy(() -> client.getArchetypeAscription(archetypeUri))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining(archetypeUri)
+        .hasMessageContaining("found 0");
+  }
+
+  @Test
+  void exactUriLookupRejectsMultipleMatches() {
+    String archetypeUri = "gsmarc://tenant/DeploymentProperties/v1";
+    String ascription =
+        """
+        {
+          "id": "01961234-5678-7000-8000-000000000099",
+          "statement": {"$id": "gsmarc://tenant/DeploymentProperties/v1", "title": "DeploymentProperties", "type": "object"},
+          "version": 1,
+          "status": "ACTIVE"
+        }
+        """;
+    server.enqueue(
+        new MockResponse()
+            .setBody("{\"_embedded\":{\"ascriptions\":[" + ascription + "," + ascription + "]}}")
+            .setHeader("Content-Type", "application/json"));
+
+    assertThatThrownBy(() -> client.getArchetypeAscription(archetypeUri))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining(archetypeUri)
+        .hasMessageContaining("found 2");
+  }
+
+  @Test
+  void exactUriLookupRejectsReturnedIdentityMismatch() {
+    String archetypeUri = "gsmarc://tenant/DeploymentProperties/v1";
+    server.enqueue(
+        new MockResponse()
+            .setBody(
+                """
+                {
+                  "_embedded": {
+                    "ascriptions": [{
+                      "id": "01961234-5678-7000-8000-000000000099",
+                      "statement": {"$id": "gsmarc://tenant/DeploymentProperties/v2", "title": "DeploymentProperties", "type": "object"},
+                      "version": 2,
+                      "status": "ACTIVE"
+                    }]
+                  }
+                }
+                """)
+            .setHeader("Content-Type", "application/json"));
+
+    assertThatThrownBy(() -> client.getArchetypeAscription(archetypeUri))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining(archetypeUri)
+        .hasMessageContaining("gsmarc://tenant/DeploymentProperties/v2");
+  }
+
+  @Test
+  void fetchesEffectorsForMechanism() throws InterruptedException {
+    UUID mechanismAscId = UUID.fromString("01961234-5678-7000-8000-000000000002");
+    String dataArchetypeId = "gsmarc://test/Output/v1";
+    String portArchetypeId = "gsmarc://gsm/Effector/v1";
+    String response =
+        """
+        {
+          "_embedded": {
+            "ascriptions": [
+              {
+                "id": "01961234-5678-7000-8000-000000000020",
+                "statement": {"mechanism": "01961234-5678-7000-8000-000000000002", "archetype": "gsmarc://test/Output/v1"},
+                "version": 1,
+                "status": "ACTIVE"
+              }
+            ]
+          },
+          "page": {"size": 20, "totalElements": 1, "totalPages": 1, "number": 0}
+        }
+        """;
+    server.enqueue(
+        new MockResponse().setBody(response).setHeader("Content-Type", "application/json"));
+    server.enqueue(
+        new MockResponse()
+            .setBody("{\"properties\":{\"statement\":{\"$id\":\"gsmarc://gsm/Effector/v1\"}}}")
+            .setHeader("Content-Type", "application/schema+json"));
 
     List<EffectorAscriptionDto> effectors = client.findEffectors(mechanismAscId);
 
     assertThat(effectors).hasSize(1);
     assertThat(effectors.getFirst().mechanism()).isEqualTo(mechanismAscId);
-    assertThat(effectors.getFirst().archetype()).isEqualTo(archetypeId);
+    assertThat(effectors.getFirst().portArchetypeUri()).isEqualTo(portArchetypeId);
+    assertThat(effectors.getFirst().archetype()).isEqualTo(dataArchetypeId);
     RecordedRequest request = server.takeRequest();
     assertThat(request.getPath()).contains("type=EFFECTOR");
+    assertThat(request.getPath()).contains("archetypeUri=gsmarc://gsm/Effector/v1");
     assertThat(request.getPath()).doesNotContain("status=");
     assertThat(request.getPath()).contains("statement.mechanism=" + mechanismAscId);
+    RecordedRequest schemaRequest = server.takeRequest();
+    assertThat(schemaRequest.getPath())
+        .isEqualTo("/api/v1/ascriptions/01961234-5678-7000-8000-000000000020/schema");
   }
 
   @Test
   void fetchesReceptorsForMechanism() throws InterruptedException {
     UUID mechanismAscId = UUID.fromString("01961234-5678-7000-8000-000000000002");
-    UUID archetypeId = UUID.fromString("01961234-5678-7000-8000-000000000088");
+    String dataArchetypeId = "gsmarc://test/Input/v1";
+    String portArchetypeId = "gsmarc://gsm/Receptor/v1";
     String response =
         """
         {
           "_embedded": {
-            "ascriptionDtoList": [
+            "ascriptions": [
               {
                 "id": "01961234-5678-7000-8000-000000000030",
-                "statement": {"mechanism": "01961234-5678-7000-8000-000000000002", "archetype": "01961234-5678-7000-8000-000000000088"},
+                "statement": {"mechanism": "01961234-5678-7000-8000-000000000002", "archetype": "gsmarc://test/Input/v1"},
                 "version": 1,
                 "status": "ACTIVE"
               }
@@ -150,16 +262,59 @@ class DefinitionManagerClientTest {
         """;
     server.enqueue(
         new MockResponse().setBody(response).setHeader("Content-Type", "application/json"));
+    server.enqueue(
+        new MockResponse()
+            .setBody("{\"properties\":{\"statement\":{\"$id\":\"gsmarc://gsm/Receptor/v1\"}}}")
+            .setHeader("Content-Type", "application/schema+json"));
 
     List<ReceptorAscriptionDto> receptors = client.findReceptors(mechanismAscId);
 
     assertThat(receptors).hasSize(1);
     assertThat(receptors.getFirst().mechanism()).isEqualTo(mechanismAscId);
-    assertThat(receptors.getFirst().archetype()).isEqualTo(archetypeId);
+    assertThat(receptors.getFirst().portArchetypeUri()).isEqualTo(portArchetypeId);
+    assertThat(receptors.getFirst().archetype()).isEqualTo(dataArchetypeId);
     RecordedRequest request = server.takeRequest();
     assertThat(request.getPath()).contains("type=RECEPTOR");
+    assertThat(request.getPath()).contains("archetypeUri=gsmarc://gsm/Receptor/v1");
     assertThat(request.getPath()).doesNotContain("status=");
     assertThat(request.getPath()).contains("statement.mechanism=" + mechanismAscId);
+    RecordedRequest schemaRequest = server.takeRequest();
+    assertThat(schemaRequest.getPath())
+        .isEqualTo("/api/v1/ascriptions/01961234-5678-7000-8000-000000000030/schema");
+  }
+
+  @Test
+  void fetchesReceptorByIdWithTypingArchetypeFromSchema() throws InterruptedException {
+    UUID receptorAscId = UUID.fromString("01961234-5678-7000-8000-000000000030");
+    UUID mechanismAscId = UUID.fromString("01961234-5678-7000-8000-000000000002");
+    server.enqueue(
+        new MockResponse()
+            .setBody(
+                """
+                {
+                  "id": "01961234-5678-7000-8000-000000000030",
+                  "statement": {
+                    "mechanism": "01961234-5678-7000-8000-000000000002",
+                    "archetype": "gsmarc://test/Input/v1"
+                  },
+                  "version": 1,
+                  "status": "ACTIVE"
+                }
+                """)
+            .setHeader("Content-Type", "application/json"));
+    server.enqueue(
+        new MockResponse()
+            .setBody("{\"properties\":{\"statement\":{\"$id\":\"gsmarc://gsm/Receptor/v1\"}}}")
+            .setHeader("Content-Type", "application/schema+json"));
+
+    ReceptorAscriptionDto receptor = client.getReceptorAscription(receptorAscId);
+
+    assertThat(receptor.mechanism()).isEqualTo(mechanismAscId);
+    assertThat(receptor.portArchetypeUri()).isEqualTo("gsmarc://gsm/Receptor/v1");
+    assertThat(receptor.archetype()).isEqualTo("gsmarc://test/Input/v1");
+    assertThat(server.takeRequest().getPath()).isEqualTo("/api/v1/ascriptions/" + receptorAscId);
+    assertThat(server.takeRequest().getPath())
+        .isEqualTo("/api/v1/ascriptions/" + receptorAscId + "/schema");
   }
 
   @Test
@@ -170,7 +325,7 @@ class DefinitionManagerClientTest {
         """
         {
           "_embedded": {
-            "ascriptionDtoList": [
+            "ascriptions": [
               {
                 "id": "01961234-5678-7000-8000-000000000040",
                 "statement": {
@@ -196,6 +351,7 @@ class DefinitionManagerClientTest {
     assertThat(interactions.getFirst().receptor()).isEqualTo(receptorId);
     RecordedRequest request = server.takeRequest();
     assertThat(request.getPath()).contains("type=INTERACTION");
+    assertThat(request.getPath()).contains("archetypeUri=gsmarc://gsm/Interaction/v1");
     assertThat(request.getPath()).contains("statement.effector=" + effectorAscId);
   }
 
@@ -221,7 +377,7 @@ class DefinitionManagerClientTest {
         """
         {
           "_embedded": {
-            "ascriptionDtoList": [
+            "ascriptions": [
               {
                 "id": "01961234-5678-7000-8000-000000000050",
                 "statement": {"title": "Structure", "type": "object"},
@@ -242,6 +398,7 @@ class DefinitionManagerClientTest {
     assertThat(result.get().path("id").asText()).isEqualTo(ascId.toString());
     RecordedRequest request = server.takeRequest();
     assertThat(request.getPath()).contains("type=ARCHETYPE");
+    assertThat(request.getPath()).contains("archetypeUri=gsmarc://gsm/Archetype/v1");
     assertThat(request.getPath()).contains("statement.title=Structure");
   }
 
@@ -264,7 +421,7 @@ class DefinitionManagerClientTest {
 
   @Test
   void createAscriptionPostsAndReturnsCreated() throws Exception {
-    UUID archetypeId = UUID.fromString("01961234-5678-7000-8000-000000000060");
+    String archetypeId = "gsmarc://gsm/Structure/v1";
     UUID createdId = UUID.fromString("01961234-5678-7000-8000-000000000061");
     String response =
         """
@@ -292,7 +449,10 @@ class DefinitionManagerClientTest {
     assertThat(request.getMethod()).isEqualTo("POST");
     assertThat(request.getPath()).isEqualTo("/api/v1/ascriptions");
     JsonNode body = mapper.readTree(request.getBody().readUtf8());
-    assertThat(body.path("archetypeId").asText()).isEqualTo(archetypeId.toString());
+    assertThat(body.path("archetypeUri").asText()).isEqualTo(archetypeId);
+    assertThat(body.has("archetypeSlug")).isFalse();
+    assertThat(body.has("archetype")).isFalse();
+    assertThat(body.has("archetypeId")).isFalse();
     assertThat(body.path("statement").path("purpose").asText()).isEqualTo("sie-operator");
   }
 }

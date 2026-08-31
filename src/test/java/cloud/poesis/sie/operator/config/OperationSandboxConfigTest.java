@@ -348,6 +348,28 @@ class OperationSandboxConfigTest {
   }
 
   @Test
+  void receptionOnRequiresExactPortArchetypeId() throws EvalException {
+    String receptorPortId = "gsmarc://test/TriggerPort/v1";
+    var reception =
+        new OperationSandboxConfig.Reception(
+            OperationSandboxConfig.toStarlarkDict(Map.of()), Set.of(receptorPortId));
+
+    assertThat(reception.on(receptorPortId)).isSameAs(reception);
+  }
+
+  @Test
+  void receptionOnRejectsDifferentPortArchetypeVersion() {
+    var reception =
+        new OperationSandboxConfig.Reception(
+            OperationSandboxConfig.toStarlarkDict(Map.of()),
+            Set.of("gsmarc://test/TriggerPort/v1"));
+
+    assertThatThrownBy(() -> reception.on("gsmarc://test/TriggerPort/v2"))
+        .isInstanceOf(EvalException.class)
+        .hasMessageContaining("Unknown receptor port archetype");
+  }
+
+  @Test
   void receptionGetIndexReturnsValue() throws EvalException {
     var dict = OperationSandboxConfig.toStarlarkDict(Map.of("key", "val"));
     var reception = new OperationSandboxConfig.Reception(dict);
@@ -433,6 +455,74 @@ class OperationSandboxConfigTest {
     assertThatThrownBy(() -> effect.on("Second"))
         .isInstanceOf(EvalException.class)
         .hasMessageContaining(".on()");
+  }
+
+  @Test
+  void effectQualifiersRequireExactDataAndPortArchetypeIds() throws EvalException {
+    String feedbackDataId = "gsmarc://test/Feedback/v1";
+    String receptorPortId = "gsmarc://test/FeedbackPort/v1";
+    String effectorPortId = "gsmarc://test/OutputPort/v1";
+    var effect =
+        new OperationSandboxConfig.Effect(
+            "gsmarc://test/Output/v1",
+            Map.of(),
+            dto -> null,
+            Set.of(feedbackDataId),
+            Set.of(receptorPortId),
+            Set.of(effectorPortId));
+
+    assertThat(effect.by(effectorPortId)).isSameAs(effect);
+    assertThat(effect.receive(feedbackDataId)).isSameAs(effect);
+    assertThat(effect.on(receptorPortId)).isSameAs(effect);
+  }
+
+  @Test
+  void effectByRejectsDifferentPortArchetypeId() {
+    var effect =
+        new OperationSandboxConfig.Effect(
+            "gsmarc://test/Output/v1",
+            Map.of(),
+            dto -> null,
+            Set.of(),
+            Set.of(),
+            Set.of("gsmarc://test/OutputPort/v1"));
+
+    assertThatThrownBy(() -> effect.by("gsmarc://other/OutputPort/v1"))
+        .isInstanceOf(EvalException.class)
+        .hasMessageContaining("Unknown effector port archetype");
+  }
+
+  @Test
+  void effectReceiveRejectsDifferentFeedbackDataArchetypeId() {
+    var effect =
+        new OperationSandboxConfig.Effect(
+            "gsmarc://test/Output/v1",
+            Map.of(),
+            dto -> null,
+            Set.of("gsmarc://test/Feedback/v1"),
+            Set.of(),
+            Set.of());
+
+    assertThatThrownBy(() -> effect.receive("gsmarc://other/Feedback/v1"))
+        .isInstanceOf(EvalException.class)
+        .hasMessageContaining("Unknown feedback data archetype");
+  }
+
+  @Test
+  void effectOnRejectsDifferentReceptorPortArchetypeId() throws EvalException {
+    var effect =
+        new OperationSandboxConfig.Effect(
+            "gsmarc://test/Output/v1",
+            Map.of(),
+            dto -> null,
+            Set.of("gsmarc://test/Feedback/v1"),
+            Set.of("gsmarc://test/FeedbackPort/v1"),
+            Set.of());
+    effect.receive("gsmarc://test/Feedback/v1");
+
+    assertThatThrownBy(() -> effect.on("gsmarc://other/FeedbackPort/v1"))
+        .isInstanceOf(EvalException.class)
+        .hasMessageContaining("Unknown receptor port archetype");
   }
 
   @Test

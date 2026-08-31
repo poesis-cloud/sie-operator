@@ -1,6 +1,6 @@
 # Governance Protocol
 
-Governance protocol statements for the ITIP meta-governance framework.
+Governance protocol statements for the ITIP meta-governance ontology.
 
 ## Overview
 
@@ -14,8 +14,8 @@ The governance protocol defines how governance events and results flow through t
 | ---------------------------- | ---------------- | -------------------------------------------------------------------------------------------- |
 | `GovernanceEvent`            | Archetype (data) | Governance event payload: evaluation triggers, compliance assertions, sourcing notifications |
 | `GovernanceEventEffector`    | Effector         | Emits governance events; identity-bound by `eventType` + `subjectRef`                        |
-| `GovernanceEventReceptor`    | Receptor         | Receives governance events; identity-bound by `frameworkRef`                                 |
-| `GovernanceEventInteraction` | Interaction      | Causal link: event emitter → framework listener                                              |
+| `GovernanceEventReceptor`    | Receptor         | Receives governance events; identity-bound by `ontologyRef`                                  |
+| `GovernanceEventInteraction` | Interaction      | Causal link: event emitter → ontology listener                                               |
 
 ### GovernanceResult (outbound)
 
@@ -23,7 +23,7 @@ The governance protocol defines how governance events and results flow through t
 | ----------------------------- | ---------------- | ----------------------------------------------------------------------------------- |
 | `GovernanceResult`            | Archetype (data) | Governance result payload: evaluation/compliance/sourcing outcomes (PASS/WARN/FAIL) |
 | `GovernanceResultEffector`    | Effector         | Emits governance results; identity-bound by `resultType`                            |
-| `GovernanceResultReceptor`    | Receptor         | Receives governance results; identity-bound by `frameworkRef`                       |
+| `GovernanceResultReceptor`    | Receptor         | Receives governance results; identity-bound by `ontologyRef`                        |
 | `GovernanceResultInteraction` | Interaction      | Causal link: evaluation engine → governance consumer                                |
 
 ## Event Types
@@ -32,15 +32,16 @@ The governance protocol defines how governance events and results flow through t
 | ----------------------- | ------------------------------------------------------------------------------- |
 | `EVALUATION_TRIGGER`    | Signals that an evaluation cycle should be initiated for the referenced subject |
 | `COMPLIANCE_ASSERTION`  | Asserts a compliance posture change for a governed entity                       |
-| `SOURCING_NOTIFICATION` | Notifies that a framework sourcing operation completed                          |
+| `SOURCING_NOTIFICATION` | Notifies that an ontology sourcing operation completed                          |
 
 ## Result Types
 
 | Result Type         | Description                                                           |
 | ------------------- | --------------------------------------------------------------------- |
 | `EVALUATION_RESULT` | Outcome of an evaluation cycle (rule execution against a subject)     |
-| `COMPLIANCE_RESULT` | Aggregated compliance posture for a governed entity under a framework |
-| `SOURCING_RESULT`   | Outcome of a framework sourcing operation                             |
+| `COMPLIANCE_RESULT` | Aggregated compliance posture for a governed entity under an ontology |
+| `SOURCING_RESULT`   | Outcome of a ontology sourcing operation                              |
+| `SOURCING_RESULT`   | Outcome of an ontology sourcing operation                             |
 
 ## URI Pattern
 

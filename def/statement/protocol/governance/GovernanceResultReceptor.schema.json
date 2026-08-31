@@ -3,17 +3,17 @@
   "$ref": "gsmarc://gsm/Receptor/v1",
   "$id": "gsmarc://ops/protocols/governance/GovernanceResultReceptor/v1",
   "title": "GovernanceResultReceptor",
-  "description": "Identifies the receptor that receives governance results. The framework reference defines which governance domain consumes evaluation outcomes. Source: ITIP Meta-Governance Framework; GSM Receptor semantics.",
+  "description": "Identifies the receptor that receives governance results. The ontology reference defines which governance domain consumes evaluation outcomes. Source: ITIP Meta-Governance Ontology; GSM Receptor semantics.",
   "type": "object",
   "required": [
-    "frameworkRef"
+    "ontologyRef"
   ],
   "properties": {
-    "frameworkRef": {
+    "ontologyRef": {
       "type": "string",
       "format": "uri",
       "minLength": 1,
-      "description": "URI reference identifying the governance framework this receptor consumes results for (e.g., 'gsmarc://frameworks/gdpr/v1'). Defines WHERE governance outcomes are delivered. Identity-bound: receptors of the same Definition always consume results for the same framework. Source: ITIP framework catalog.",
+      "description": "URI reference identifying the governance ontology this receptor consumes results for (e.g., 'gsmarc://gsm-ontology/gdpr/v1'). Defines WHERE governance outcomes are delivered. Identity-bound: receptors of the same Definition always consume results for the same ontology. Source: ITIP ontology catalogue.",
       "$gsm:identityBound": true,
       "$gsm:queryable": true
     }

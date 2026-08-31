@@ -3,7 +3,7 @@
   "$ref": "gsmarc://gsm/Interaction/v1",
   "$id": "gsmarc://ops/protocols/governance/GovernanceEventInteraction/v1",
   "title": "GovernanceEventInteraction",
-  "description": "Types a one-way causal link (Effector → Receptor) carrying a governance event message from the event emitter to the governance framework listener. Source: ITIP Meta-Governance Framework; GSM Interaction semantics.",
+  "description": "Types a one-way causal link (Effector → Receptor) carrying a governance event message from the event emitter to the governance ontology listener. Source: ITIP Meta-Governance Ontology; GSM Interaction semantics.",
   "type": "object",
   "unevaluatedProperties": false
 }

@@ -60,7 +60,7 @@ class ItipGovernanceAppraisalIT {
 
   /**
    * The real ITIP Starlark rule for DIRECTIVE_NORM_OPERATIONALIZATION — copied verbatim from
-   * gsm-frameworks/frameworks/itip/meta-governance/DirectiveNormOperationalization.mechanism.json
+   * Historical source: gsm/archive/meta-governance/ItDirectiveNormOperationalization.mechanism.json
    */
   static final String STARLARK_RULE =
       """
@@ -243,6 +243,9 @@ class ItipGovernanceAppraisalIT {
       }
 
       try {
+        if (path.endsWith("/schema")) {
+          return dispatchAscriptionSchema(path);
+        }
         // GET /api/v1/ascriptions/{id} — direct fetch by ascription ID
         if (path.startsWith("/api/v1/ascriptions/") && !path.contains("?")) {
           return dispatchAscriptionById(path);
@@ -256,6 +259,24 @@ class ItipGovernanceAppraisalIT {
       }
 
       return notFound();
+    }
+
+    private MockResponse dispatchAscriptionSchema(String path) throws Exception {
+      String ascIdStr = path.replace("/api/v1/ascriptions/", "").replace("/schema", "");
+      UUID ascId = UUID.fromString(ascIdStr);
+      if (OPERATOR_RECEPTOR_ASC_ID.equals(ascId) || RECEPTOR_ASC_ID.equals(ascId)) {
+        return schemaResponse("gsmarc://gsm/Receptor/v1");
+      }
+      if (EFFECTOR_ASC_ID.equals(ascId)) {
+        return schemaResponse("gsmarc://gsm/Effector/v1");
+      }
+      return notFound();
+    }
+
+    private MockResponse schemaResponse(String archetypeUri) throws Exception {
+      ObjectNode schema = MAPPER.createObjectNode();
+      schema.putObject("properties").putObject("statement").put("$id", archetypeUri);
+      return jsonResponse(schema);
     }
 
     private MockResponse dispatchAscriptionById(String path) throws Exception {

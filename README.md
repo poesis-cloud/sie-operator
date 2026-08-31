@@ -117,14 +117,14 @@ All protocols are **structurally identical**: same dispatcher SPI (`MechanismEff
 **Ownership split** (decided during the GSM Sourcer / SBAS design phase):
 
 - **Operator-internal protocols** live in this repo under `def/statement/protocol/` — Relay (in-memory causal propagation) and Governance (DM ↔ Operator events). These are part of the Operator runtime contract.
-- **Application protocols** (HTTP, Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket) are owned by **ITIP** under `gsm-frameworks/frameworks/{family}/` (the standalone, public `gsm-frameworks` repo). They describe how applications interact with the world and are catalogued alongside other ITIP frameworks (TOGAF, ISO 25000, GDPR…). The Operator vendors HTTP at build time via a Maven `<resource>` directive pointing to ITIP, so `StructureSeedRunner` can still register them at startup.
+- **Application protocols** (HTTP, Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket) are owned by **ITIP** under `gsm-ontology/ontologies/{family}/` (the standalone, public `gsm-ontology` repo). They describe how applications interact with the world and are catalogued alongside other ITIP ontologies (TOGAF, ISO 25000, GDPR…). The Operator vendors HTTP at build time via a Maven `<resource>` directive pointing to ITIP, so `StructureSeedRunner` can still register them at startup.
 
 | Protocol                                        | Owner        | Boundary           | Analogy            | Description                                                                                           |
 | ----------------------------------------------- | ------------ | ------------------ | ------------------ | ----------------------------------------------------------------------------------------------------- |
 | **HTTP**                                        | ITIP         | Network (external) | Syscall / FFI      | Crosses the runtime boundary to reach external targets via HTTP requests/responses.                   |
 | **Relay**                                       | sie-operator | In-memory (native) | Causal propagation | Propagates causal signals between mechanisms within an operation chain — no network boundary crossed. |
 | **Governance**                                  | sie-operator | In-memory (native) | DM ↔ Operator     | Governance event/result exchange between Definition Manager and Operator.                             |
-| **Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket** | ITIP         | Network (external) | Various            | Reserved framework directories; archetype quads to be authored when first sourced.                    |
+| **Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket** | ITIP         | Network (external) | Various            | Reserved ontology directories; archetype quads to be authored when first sourced.                     |
 
 ### Archetype Quad Pattern
 
@@ -139,9 +139,9 @@ Each protocol defines a family of 4 Archetypes (following the GSM Effector/Recep
 
 ### Protocols
 
-#### HTTP (`gsm-frameworks/frameworks/http/` — vendored to operator classpath)
+#### HTTP (`gsm-ontology/ontologies/http/` — vendored to operator classpath)
 
-Crosses the network boundary — analogous to a **syscall** or **FFI call**. `$id` scheme: `gsmarc://gsm-frameworks/http/{Title}/v1`.
+Crosses the network boundary — analogous to a **syscall** or **FFI call**. `$id` scheme: `gsmarc://gsm-ontology/http/{Title}/v1`.
 
 Two directions:
 
@@ -169,7 +169,7 @@ The name "relay" is sourced from three domains:
 
 #### Kafka and other application protocols (reserved)
 
-Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket archetype families are reserved under `gsm-frameworks/frameworks/{family}/`. Not yet implemented.
+Kafka, AMQP, gRPC, GraphQL, JDBC, WebSocket archetype families are reserved under `gsm-ontology/ontologies/{family}/`. Not yet implemented.
 
 ---
 
@@ -268,7 +268,7 @@ sie-operator/
 │       └── governance/                 # Governance event/result archetype family (8 files)
 │
 │   # NOTE: Application protocols (HTTP, Kafka, AMQP, gRPC, GraphQL, JDBC,
-│   # WebSocket) are owned by ITIP — see gsm-frameworks/frameworks/{family}/.
+│   # WebSocket) are owned by ITIP — see gsm-ontology/ontologies/{family}/.
 │   # HTTP is vendored to the operator classpath via a Maven <resource>
 │   # directive in pom.xml so StructureSeedRunner can register it at startup.
 │

@@ -34,9 +34,9 @@ class MechanismHttpEffectorExecutionServiceTest {
   void supportsEffectsWithHttpRequestEffectorArchetype() {
     EffectDto effect =
         new EffectDto(
-            "HttpRequest",
+            "Request",
             Map.of("targetUri", "http://localhost/test", "method", "GET"),
-            "HttpRequestEffector",
+            "gsmarc://gsm-ontology/http/RequestEffector/v1",
             null,
             null,
             false);
@@ -47,7 +47,7 @@ class MechanismHttpEffectorExecutionServiceTest {
   void supportsEffectsWithTargetUriAndMethodLegacy() {
     EffectDto effect =
         EffectDto.fireAndForget(
-            "HttpRequest", Map.of("targetUri", "http://localhost/test", "method", "GET"));
+            "Request", Map.of("targetUri", "http://localhost/test", "method", "GET"));
     assertThat(dispatcher.supports(effect)).isTrue();
   }
 
@@ -81,7 +81,7 @@ class MechanismHttpEffectorExecutionServiceTest {
   void doesNotSupportEffectsWithLegacyTargetURICasing() {
     EffectDto effect =
         EffectDto.fireAndForget(
-            "HttpRequest", Map.of("targetURI", "http://localhost/test", "method", "GET"));
+            "Request", Map.of("targetURI", "http://localhost/test", "method", "GET"));
     assertThat(dispatcher.supports(effect)).isFalse();
   }
 
@@ -95,7 +95,7 @@ class MechanismHttpEffectorExecutionServiceTest {
     String targetUri = server.url("/api/resource").toString();
     EffectDto effect =
         EffectDto.fireAndForget(
-            "HttpRequest",
+            "Request",
             Map.of(
                 "targetUri",
                 targetUri,
@@ -125,7 +125,7 @@ class MechanismHttpEffectorExecutionServiceTest {
     String targetUri = server.url("/api/items").toString();
     EffectDto effect =
         EffectDto.fireAndForget(
-            "HttpRequest",
+            "Request",
             Map.of("targetUri", targetUri, "method", "GET", "accept", "application/json"));
 
     Map<String, Object> result = dispatcher.dispatch(effect);
@@ -145,7 +145,7 @@ class MechanismHttpEffectorExecutionServiceTest {
     String targetUri = server.url("/api/test").toString();
     EffectDto effect =
         EffectDto.fireAndForget(
-            "HttpRequest",
+            "Request",
             Map.of("targetUri", targetUri, "method", "GET", "body", "should-be-ignored"));
 
     dispatcher.dispatch(effect);
@@ -161,7 +161,7 @@ class MechanismHttpEffectorExecutionServiceTest {
 
     String targetUri = server.url("/api/empty").toString();
     EffectDto effect =
-        EffectDto.fireAndForget("HttpRequest", Map.of("targetUri", targetUri, "method", "DELETE"));
+        EffectDto.fireAndForget("Request", Map.of("targetUri", targetUri, "method", "DELETE"));
 
     Map<String, Object> result = dispatcher.dispatch(effect);
 

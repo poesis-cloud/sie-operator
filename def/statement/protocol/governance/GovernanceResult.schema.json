@@ -2,7 +2,7 @@
   "$schema": "gsmarc://gsm/Archetype/v1",
   "$id": "gsmarc://ops/protocols/governance/GovernanceResult/v1",
   "title": "GovernanceResult",
-  "description": "Types the data payload flowing through Governance Effectors/Receptors when the payload is a governance result message. A governance result conveys the outcome of a governance evaluation — pass, warning, or failure — along with optional finding references. Extending archetypes add domain-specific result shapes via $ref/allOf composition. Source: ITIP Meta-Governance Framework; GSM Directive/Norm/Ascription governance grammar.",
+  "description": "Types the data payload flowing through Governance Effectors/Receptors when the payload is a governance result message. A governance result conveys the outcome of a governance evaluation — pass, warning, or failure — along with optional finding references. Extending archetypes add domain-specific result shapes via $ref/allOf composition. Source: ITIP Meta-Governance Ontology; GSM Directive/Norm/Ascription governance grammar.",
   "type": "object",
   "required": [
     "resultType",
@@ -17,7 +17,7 @@
         "COMPLIANCE_RESULT",
         "SOURCING_RESULT"
       ],
-      "description": "Governance result discriminator. EVALUATION_RESULT — outcome of an evaluation cycle (rule execution against a subject). COMPLIANCE_RESULT — aggregated compliance posture for a governed entity under a framework. SOURCING_RESULT — outcome of a framework sourcing operation (success/partial/failure). Source: ITIP meta-governance; GSM Ascription lifecycle.",
+      "description": "Governance result discriminator. EVALUATION_RESULT — outcome of an evaluation cycle (rule execution against a subject). COMPLIANCE_RESULT — aggregated compliance posture for a governed entity under a framework. SOURCING_RESULT — outcome of a ontology sourcing operation (success/partial/failure). Source: ITIP meta-governance; GSM Ascription lifecycle.",
       "$gsm:identityBound": true,
       "$gsm:queryable": true
     },
@@ -39,11 +39,11 @@
       "$gsm:identityBound": true,
       "$gsm:queryable": true
     },
-    "frameworkRef": {
+    "ontologyRef": {
       "type": "string",
       "format": "uri",
       "minLength": 1,
-      "description": "URI reference to the governance framework under which this result was produced. Source: ITIP framework catalog.",
+      "description": "URI reference to the governance ontology under which this result was produced. Source: ITIP ontology catalogue.",
       "$gsm:queryable": true
     },
     "findingRefs": {

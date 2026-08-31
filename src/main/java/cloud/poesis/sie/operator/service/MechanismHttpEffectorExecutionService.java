@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +23,11 @@ public class MechanismHttpEffectorExecutionService implements MechanismEffectorE
   private static final Logger log =
       LoggerFactory.getLogger(MechanismHttpEffectorExecutionService.class);
 
-  private static final Set<String> HTTP_EFFECTOR_ARCHETYPES = Set.of("HttpRequestEffector");
+  /** Matched by URI stem, so every governed version of the archetype dispatches here. */
+  private static final Set<String> HTTP_EFFECTOR_ARCHETYPE_STEMS =
+      Set.of("gsmarc://gsm-ontology/http/RequestEffector");
+
+  private static final Pattern URI_VERSION_SUFFIX = Pattern.compile("/v\\d+$");
 
   private final WebClient webClient;
   private final Duration timeout;
@@ -38,11 +43,15 @@ public class MechanismHttpEffectorExecutionService implements MechanismEffectorE
   public boolean supports(EffectDto effect) {
     String effectorArchetype = effect.effectorArchetype();
     if (effectorArchetype != null) {
-      return HTTP_EFFECTOR_ARCHETYPES.contains(effectorArchetype);
+      return HTTP_EFFECTOR_ARCHETYPE_STEMS.contains(stemOf(effectorArchetype));
     }
     // Legacy duck-typing fallback for effects without effectorArchetype
     Map<String, Object> data = effect.data();
     return data.containsKey("targetUri") && data.containsKey("method");
+  }
+
+  private static String stemOf(String archetypeUri) {
+    return URI_VERSION_SUFFIX.matcher(archetypeUri).replaceFirst("");
   }
 
   @Override

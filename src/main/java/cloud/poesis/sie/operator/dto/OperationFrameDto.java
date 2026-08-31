@@ -10,7 +10,7 @@ import java.util.UUID;
  * Resolved operation frame: the mechanism, its ports (effectors/receptors), their data archetypes,
  * and interaction wiring. Built by fetching the mechanism's constitutive parts from the Definition
  * Manager. Purely composed of typed ascription DTOs; derivation methods resolve cross-references
- * (e.g. archetype name/schema lookups) by joining through the archetypes map.
+ * (e.g. Archetype URI/schema lookups) by joining through the archetypes map.
  */
 public record OperationFrameDto(
     MechanismAscriptionDto mechanism,
@@ -29,34 +29,63 @@ public record OperationFrameDto(
     return Optional.ofNullable(archetypes.get(archetypeAscriptionId));
   }
 
-  /** Finds the receptor whose data archetype matches the given archetype name. */
-  public Optional<ReceptorAscriptionDto> findReceptorByArchetypeName(String archetypeName) {
-    return receptors.stream()
-        .filter(
-            r -> {
-              ArchetypeAscriptionDto a = archetypes.get(r.archetype());
-              return a != null && archetypeName.equals(a.title());
-            })
-        .findFirst();
-  }
-
-  /** Finds the effector whose data archetype matches the given archetype name. */
-  public Optional<EffectorAscriptionDto> findEffectorByArchetypeName(String archetypeName) {
-    return effectors.stream()
-        .filter(
-            e -> {
-              ArchetypeAscriptionDto a = archetypes.get(e.archetype());
-              return a != null && archetypeName.equals(a.title());
-            })
-        .findFirst();
-  }
-
-  /** Returns the JSON Schema for the named archetype, or empty if not resolved. */
-  public Optional<JsonNode> findSchema(String archetypeName) {
+  /** Returns the Archetype Ascription the URI resolves to, or empty if it was not resolved. */
+  public Optional<ArchetypeAscriptionDto> findArchetype(String archetypeUri) {
     return archetypes.values().stream()
-        .filter(a -> archetypeName.equals(a.title()))
-        .findFirst()
-        .map(ArchetypeAscriptionDto::schema);
+        .filter(archetype -> archetypeUri.equals(archetype.uri()))
+        .findFirst();
+  }
+
+  /** Finds the receptor whose data Archetype has the exact URI. */
+  public Optional<ReceptorAscriptionDto> findReceptorByArchetypeId(String archetypeUri) {
+    return receptors.stream()
+        .filter(receptor -> archetypeUri.equals(receptor.archetype()))
+        .findFirst();
+  }
+
+  /** Finds the receptor whose port Archetype has the exact URI. */
+  public Optional<ReceptorAscriptionDto> findReceptorByPortArchetypeId(String archetypeUri) {
+    return receptors.stream()
+        .filter(receptor -> archetypeUri.equals(receptor.portArchetypeUri()))
+        .findFirst();
+  }
+
+  /** Finds the effector whose data Archetype has the exact URI. */
+  public Optional<EffectorAscriptionDto> findEffectorByArchetypeId(String archetypeUri) {
+    return effectors.stream()
+        .filter(effector -> archetypeUri.equals(effector.archetype()))
+        .findFirst();
+  }
+
+  /** Finds the effector whose port Archetype has the exact URI. */
+  public Optional<EffectorAscriptionDto> findEffectorByPortArchetypeId(String archetypeUri) {
+    return effectors.stream()
+        .filter(effector -> archetypeUri.equals(effector.portArchetypeUri()))
+        .findFirst();
+  }
+
+  /** Finds the unique effector matching both exact data and port Archetype IDs. */
+  public Optional<EffectorAscriptionDto> findEffector(
+      String dataArchetypeId, String portArchetypeId) {
+    List<EffectorAscriptionDto> matches =
+        effectors.stream()
+            .filter(effector -> dataArchetypeId.equals(effector.archetype()))
+            .filter(effector -> portArchetypeId.equals(effector.portArchetypeUri()))
+            .toList();
+    if (matches.size() > 1) {
+      throw new IllegalStateException(
+          "Ambiguous effector for data Archetype '"
+              + dataArchetypeId
+              + "' and port Archetype '"
+              + portArchetypeId
+              + "'");
+    }
+    return matches.stream().findFirst();
+  }
+
+  /** Returns the JSON Schema for the exact Archetype URI. */
+  public Optional<JsonNode> findSchema(String archetypeUri) {
+    return findArchetype(archetypeUri).map(ArchetypeAscriptionDto::schema);
   }
 
   public String getRuleSource() {

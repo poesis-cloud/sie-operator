@@ -3,7 +3,7 @@
   "$ref": "gsmarc://gsm/Interaction/v1",
   "$id": "gsmarc://ops/protocols/governance/GovernanceResultInteraction/v1",
   "title": "GovernanceResultInteraction",
-  "description": "Types a one-way causal link (Effector → Receptor) carrying a governance result message from the evaluation engine back to the governance framework consumer. Source: ITIP Meta-Governance Framework; GSM Interaction semantics.",
+  "description": "Types a one-way causal link (Effector → Receptor) carrying a governance result message from the evaluation engine back to the governance ontology consumer. Source: ITIP Meta-Governance Ontology; GSM Interaction semantics.",
   "type": "object",
   "unevaluatedProperties": false
 }
